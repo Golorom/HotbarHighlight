@@ -32,8 +32,8 @@ Add a test with each change. When the game is found to behave differently from t
 ## Releases
 
 1. Set `## Version:` in `HotbarHighlight.toc` and add a `## <version>` section at the top of `CHANGELOG.md`.
-2. Commit, then tag `v<version>` and push the tag.
-3. The Release workflow runs the tests, checks that the tag matches the TOC, builds `HotbarHighlight-v<version>.zip` (the addon in a `HotbarHighlight` folder, without `tests`, `docs` and `.github`) and publishes it as a GitHub release with that changelog section as its notes.
+2. Commit and push to `main`. Then either push a tag `v<version>`, or open the Actions tab on GitHub, choose Release, and press "Run workflow" on `main` (the workflow makes the tag itself).
+3. The Release workflow runs the tests, checks that a pushed tag matches the TOC and that no release of that version exists, builds `HotbarHighlight-v<version>.zip` (the addon in a `HotbarHighlight` folder, without `tests`, `docs` and `.github`) and publishes it as a GitHub release with that changelog section as its notes.
 
 ## Layout
 

@@ -1,8 +1,12 @@
 name: Release
 
+# Two ways to release the version in the TOC:
+#   - push a tag v<version>, or
+#   - Actions tab, Release, "Run workflow" (on main): the tag is made here.
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -19,14 +23,22 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y lua5.1
       - name: Run the tests
         run: lua5.1 tests/run.lua
-      - name: Check that the tag matches the TOC version
+      - name: Read the version; a pushed tag must match it; no release of it may exist
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           version="$(sed -n 's/^## Version: *//p' "$ADDON.toc" | tr -d '\r')"
-          echo "TOC version: $version, tag: $GITHUB_REF_NAME"
-          test "v$version" = "$GITHUB_REF_NAME"
+          tag="v$version"
+          echo "TOC version: $version, tag: $tag, started by: $GITHUB_EVENT_NAME on $GITHUB_REF_NAME"
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then test "$tag" = "$GITHUB_REF_NAME"; fi
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag exists already. Raise the version in $ADDON.toc first."
+            exit 1
+          fi
           echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "TAG=$tag" >> "$GITHUB_ENV"
       - name: Build the zip
-        run: git archive --format=zip --prefix="$ADDON/" -o "$ADDON-$GITHUB_REF_NAME.zip" HEAD
+        run: git archive --format=zip --prefix="$ADDON/" -o "$ADDON-$TAG.zip" HEAD
       - name: Take the release notes from the changelog
         run: |
           awk -v head="## $VERSION" 'index($0, head) == 1 { on = 1; next } /^## / && on { exit } on' CHANGELOG.md > notes.md
@@ -34,4 +46,4 @@ jobs:
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" "$ADDON-$GITHUB_REF_NAME.zip" --title "Hotbar Highlight $GITHUB_REF_NAME" --notes-file notes.md
+        run: gh release create "$TAG" "$ADDON-$TAG.zip" --target "$GITHUB_SHA" --title "Hotbar Highlight $TAG" --notes-file notes.md
