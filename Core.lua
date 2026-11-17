@@ -2,11 +2,13 @@ local ADDON, HH = ...
 
 -- Hotbar Highlight: shows which action bar the modifier keys you hold belong
 -- to. The bar bound to the held modifier gets a soft glow (or a thin line)
--- around it; the other bound bars fade. Key labels on the buttons can be shortened ("S1" for Shift-1).
+-- around it; the other bound bars fade. Key labels on the buttons can be
+-- shortened ("S1" for Shift-1), moved inside their button, resized and faded.
 --
--- It only changes how things look: a bar's opacity, its own border frames,
--- and the text of the buttons' key labels. It binds nothing, casts nothing,
--- moves nothing, and sends nothing to anyone.
+-- It only changes how things look: a bar's opacity, its own highlight
+-- frames, and the buttons' key labels (text, font size, opacity, place). It
+-- binds nothing, casts nothing, moves no bar or button, and sends nothing to
+-- anyone.
 --
 -- Files: Core (settings, start), Bars (which bar is which layer, highlight),
 -- Labels (key label text), Options (settings page, slash command).
@@ -59,6 +61,13 @@ HH.COLORS = {
     {key = "ffff594d", label = "Red", old = "red"},
 }
 
+-- What the highlight goes around: the bar's whole frame, or only the
+-- buttons shown on it (a bar set to fewer icons, or with empty slots hidden).
+HH.AREAS = {
+    {key = "bar", label = "The whole bar"},
+    {key = "buttons", label = "Only the buttons shown"},
+}
+
 -- glow: a soft light around the bar that fades outward. line: a thin frame.
 HH.STYLES = {
     {key = "glow", label = "Soft glow"},
@@ -75,6 +84,24 @@ HH.LABEL_STYLES = {
     {key = "key", label = "Key only: 1"},
     {key = "blizzard", label = "The game's own: s-1"},
 }
+
+-- Where a key label sits in its button. "game": where the game puts it.
+-- Each place: the corner or side, how the text lines up, and a small inset.
+HH.LABEL_PLACES = {
+    {key = "game", label = "The game's own"},
+    {key = "topleft", label = "Top left", point = "TOPLEFT", justify = "LEFT", x = 2, y = -2},
+    {key = "top", label = "Top", point = "TOP", justify = "CENTER", x = 0, y = -2},
+    {key = "topright", label = "Top right", point = "TOPRIGHT", justify = "RIGHT", x = -2, y = -2},
+    {key = "left", label = "Left", point = "LEFT", justify = "LEFT", x = 2, y = 0},
+    {key = "center", label = "Center", point = "CENTER", justify = "CENTER", x = 0, y = 0},
+    {key = "right", label = "Right", point = "RIGHT", justify = "RIGHT", x = -2, y = 0},
+    {key = "bottomleft", label = "Bottom left", point = "BOTTOMLEFT", justify = "LEFT", x = 2, y = 2},
+    {key = "bottom", label = "Bottom", point = "BOTTOM", justify = "CENTER", x = 0, y = 2},
+    {key = "bottomright", label = "Bottom right", point = "BOTTOMRIGHT", justify = "RIGHT", x = -2, y = 2},
+}
+HH.LABEL_OFFSET_MIN, HH.LABEL_OFFSET_MAX = -20, 20
+HH.LABEL_SIZE_MIN, HH.LABEL_SIZE_MAX = 50, 200
+HH.LABEL_OPACITY_MIN, HH.LABEL_OPACITY_MAX = 20, 100
 
 HH.DIM_MIN, HH.DIM_MAX, HH.DEFAULT_DIM = 10, 100, 40
 HH.THICKNESS_MIN, HH.THICKNESS_MAX, HH.DEFAULT_THICKNESS = 1, 6, 2
@@ -137,6 +164,7 @@ function HH.Sanitize(saved)
         dim = Whole(saved.dim, HH.DIM_MIN, HH.DIM_MAX, HH.DEFAULT_DIM),
         border = saved.border ~= false,
         style = Choice(saved.style, HH.STYLES, "glow"),
+        area = Choice(saved.area, HH.AREAS, "bar"),
         color = HH.SanitizeColor(saved.color),
         opacity = Whole(saved.opacity, HH.OPACITY_MIN, HH.OPACITY_MAX, HH.DEFAULT_OPACITY),
         glow = Whole(saved.glow, HH.GLOW_MIN, HH.GLOW_MAX, HH.DEFAULT_GLOW),
@@ -145,6 +173,11 @@ function HH.Sanitize(saved)
         idle = Choice(saved.idle, HH.IDLE, "all"),
         combatOnly = saved.combatOnly == true,
         labels = Choice(saved.labels, HH.LABEL_STYLES, "short"),
+        labelPlace = Choice(saved.labelPlace, HH.LABEL_PLACES, "game"),
+        labelX = Whole(saved.labelX, HH.LABEL_OFFSET_MIN, HH.LABEL_OFFSET_MAX, 0),
+        labelY = Whole(saved.labelY, HH.LABEL_OFFSET_MIN, HH.LABEL_OFFSET_MAX, 0),
+        labelSize = Whole(saved.labelSize, HH.LABEL_SIZE_MIN, HH.LABEL_SIZE_MAX, 100),
+        labelOpacity = Whole(saved.labelOpacity, HH.LABEL_OPACITY_MIN, HH.LABEL_OPACITY_MAX, 100),
         layers = {},
     }
     local layers = type(saved.layers) == "table" and saved.layers or {}

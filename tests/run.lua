@@ -94,7 +94,24 @@ local function fixture(options)
         end
         function frame:IsShown() return self.shown end
         function frame:IsVisible() return self.shown end
-        function frame:SetPoint(...) self.points[#self.points + 1] = {...} end
+        function frame:SetPoint(...)
+            if self.game then error("the addon anchored a game frame: " .. tostring(self.name)) end
+            self.points[#self.points + 1] = {...}
+        end
+        function frame:ClearAllPoints()
+            if self.game then error("the addon cleared a game frame's anchors: " .. tostring(self.name)) end
+            self.points = {}
+        end
+        for _, method in ipairs({"SetSize", "SetWidth", "SetHeight", "SetScale", "SetParent"}) do
+            frame[method] = function(self)
+                if self.game then error("the addon called " .. method .. " on a game frame: " .. tostring(self.name)) end
+            end
+        end
+        -- A frame's place on screen, in its own scale's units.
+        function frame:GetLeft() return self.rect and self.rect[1] end
+        function frame:GetRight() return self.rect and self.rect[2] end
+        function frame:GetTop() return self.rect and self.rect[3] end
+        function frame:GetBottom() return self.rect and self.rect[4] end
         function frame:SetFrameStrata(strata) self.strata = strata end
         function frame:GetFrameStrata() return self.strata or "MEDIUM" end
         function frame:GetWidth() return self.width or 45 end
@@ -214,19 +231,51 @@ local function fixture(options)
     local without = {}
     for _, name in ipairs(options.without or {}) do without[name] = true end
     state.labels = {}
-    for _, bar in ipairs(BAR_FRAMES) do
+    for barIndex, bar in ipairs(BAR_FRAMES) do
         local frameName = bar.frame == "MainActionBar" and (options.mainName or "MainActionBar") or bar.frame
         if not without[bar.frame] then
-            newFrame("Frame", frameName)
+            newFrame("Frame", frameName).game = true
             for index = 1, bar.count do
                 local name = bar.button:format(index)
                 local button = newFrame("Button", name)
-                local label = {text = "", writes = 0}
+                button.game = true
+                -- One row of 45 px buttons per bar, bars 60 px apart.
+                local left, bottom = 100 + (index - 1) * 45, 100 + barIndex * 60
+                button.rect = {left, left + 45, bottom + 45, bottom}
+                -- The key label, as the game makes it: small, top right.
+                local label = {text = "", writes = 0, font = {"Fonts\\ARIALN.TTF", 10, "OUTLINE"}, alpha = 1,
+                    points = {{"TOPRIGHT", button, "TOPRIGHT", -5, -5}}, justify = "RIGHT", width = 36, height = 10,
+                    fontWrites = 0, pointWrites = 0}
                 function label:SetText(text)
                     self.text = text
                     self.writes = self.writes + 1
                 end
                 function label:GetText() return self.text end
+                function label:GetFont() return unpack(self.font) end
+                function label:SetFont(font, size, flags)
+                    self.font = {font, size, flags}
+                    self.fontWrites = self.fontWrites + 1
+                end
+                function label:GetAlpha() return self.alpha end
+                function label:SetAlpha(alpha) self.alpha = alpha end
+                function label:GetNumPoints() return #self.points end
+                function label:GetPoint(at) return unpack(self.points[at], 1, 5) end
+                function label:ClearAllPoints()
+                    if state.combat then error("a label's anchors changed in combat") end
+                    self.points = {}
+                end
+                function label:SetPoint(...)
+                    if state.combat then error("a label's anchors changed in combat") end
+                    self.points[#self.points + 1] = {...}
+                    self.pointWrites = self.pointWrites + 1
+                end
+                function label:GetJustifyH() return self.justify end
+                function label:SetJustifyH(justify) self.justify = justify end
+                function label:GetWidth() return self.width end
+                function label:GetHeight() return self.height end
+                function label:SetWidth(width) self.width = width end
+                function label:SetHeight(height) self.height = height end
+                function label:SetSize(width, height) self.width, self.height = width, height end
                 button.HotKey = label
                 state.labels[name] = {label = label, command = bar.command:format(index)}
             end
@@ -278,6 +327,7 @@ local function fixture(options)
         return (border ~= nil and border.shown == true) or (glow ~= nil and glow.shown == true)
     end
     function state.text(button) return state.labels[button].label.text end
+    function state.label(button) return state.labels[button].label end
 
     if options.beforeLoad then options.beforeLoad(env) end
     env.HotbarHighlightDB = options.db
@@ -645,6 +695,11 @@ test("saved settings are repaired: only known keys and valid values survive", fu
     equal(db.idle, "all")
     equal(db.combatOnly, false)
     equal(db.labels, "short")
+    equal(db.area, "bar")
+    equal(db.labelPlace, "game")
+    equal(db.labelX, 0)
+    equal(db.labelSize, 100)
+    equal(db.labelOpacity, 100)
     equal(db.extra, nil)
     equal(db.layers.bar1, "SHIFT")
     equal(db.layers.bar2, nil)
@@ -666,7 +721,8 @@ test("the settings page lists every setting and a choice per bar", function()
     equal(state.registered, state.category)
     for _, variable in ipairs({"HOTBARHIGHLIGHT_ENABLED", "HOTBARHIGHLIGHT_DIM", "HOTBARHIGHLIGHT_BORDER",
         "HOTBARHIGHLIGHT_STYLE", "HOTBARHIGHLIGHT_COLOR", "HOTBARHIGHLIGHT_OPACITY", "HOTBARHIGHLIGHT_GLOW",
-        "HOTBARHIGHLIGHT_INNER",
+        "HOTBARHIGHLIGHT_INNER", "HOTBARHIGHLIGHT_AREA", "HOTBARHIGHLIGHT_LABEL_PLACE", "HOTBARHIGHLIGHT_LABEL_X",
+        "HOTBARHIGHLIGHT_LABEL_Y", "HOTBARHIGHLIGHT_LABEL_SIZE", "HOTBARHIGHLIGHT_LABEL_OPACITY",
         "HOTBARHIGHLIGHT_THICKNESS", "HOTBARHIGHLIGHT_IDLE", "HOTBARHIGHLIGHT_COMBAT",
         "HOTBARHIGHLIGHT_LABELS", "HOTBARHIGHLIGHT_LAYER_BAR1", "HOTBARHIGHLIGHT_LAYER_BAR8",
         "HOTBARHIGHLIGHT_LAYER_PET", "HOTBARHIGHLIGHT_LAYER_STANCE"}) do
@@ -709,7 +765,7 @@ test("/hh opens the settings, out of combat; status, on and off; anything else e
     contains(state.messages[3], "Action Bar 2 (MultiBarBottomLeft): Shift (from its keys)")
     contains(state.messages[6], "Action Bar 5 (MultiBarLeft): no keys, left alone; 0 of 12")
     contains(state.messages[10], "Pet Bar (PetActionBar): Alt+Ctrl (from its keys); 10 of 10")
-    contains(state.messages[12], "Key labels: 116 found, 46 shortened.")
+    contains(state.messages[12], "Key labels: 116 found, 46 shortened, 0 with a changed look.")
     state.slash("off")
     equal(state.hh.db.enabled, false)
     equal(state.notified, "HOTBARHIGHLIGHT_ENABLED")
@@ -761,6 +817,171 @@ test("key labels: key only, the game's own, and off put the texts back", functio
     equal(state.text("MultiBarBottomLeftButton1"), "s-1")
 end)
 
+-- Key label look -----------------------------------------------------------------
+
+test("label look: with every setting at its default only the text is touched", function()
+    local state = fixture()
+    local label = state.label("MultiBarBottomLeftButton1")
+    equal(label.text, "S1")
+    equal(label.fontWrites, 0)
+    equal(label.pointWrites, 0)
+    equal(label.font[2], 10)
+    equal(label.width, 36)
+    equal(label.alpha, 1)
+end)
+
+test("label look: a place moves every label to that corner of its button, with offsets; the game's own puts it back", function()
+    local state = fixture()
+    local label = state.label("MultiBarBottomLeftButton1")
+    local button = state.env.MultiBarBottomLeftButton1
+    state.settings.HOTBARHIGHLIGHT_LABEL_PLACE.set("bottomleft")
+    equal(#label.points, 1)
+    equal(label.points[1][1], "BOTTOMLEFT")
+    equal(label.points[1][2], button, "on its own button")
+    equal(label.points[1][3], "BOTTOMLEFT")
+    equal(label.points[1][4], 2, "a small inset")
+    equal(label.points[1][5], 2)
+    equal(label.justify, "LEFT")
+    equal(label.width, 45, "room for the text: the button's width")
+    equal(state.label("PetActionButton3").points[1][1], "BOTTOMLEFT", "every bar")
+    state.settings.HOTBARHIGHLIGHT_LABEL_X.set(4)
+    state.settings.HOTBARHIGHLIGHT_LABEL_Y.set(-3)
+    equal(label.points[1][4], 6)
+    equal(label.points[1][5], -1)
+    state.settings.HOTBARHIGHLIGHT_LABEL_PLACE.set("center")
+    equal(label.points[1][1], "CENTER")
+    equal(label.justify, "CENTER")
+    state.clear()
+    state.slash("status")
+    contains(state.messages[12], "116 with a changed look")
+    state.settings.HOTBARHIGHLIGHT_LABEL_PLACE.set("game")
+    equal(label.points[1][1], "TOPRIGHT")
+    equal(label.points[1][4], -5)
+    equal(label.justify, "RIGHT")
+    equal(label.width, 36)
+    equal(label.height, 10)
+end)
+
+test("label look: size is a percent of the label's own font, opacity of its own opacity; off puts both back", function()
+    local state = fixture()
+    local label = state.label("ActionButton5")
+    state.settings.HOTBARHIGHLIGHT_LABEL_SIZE.set(150)
+    equal(label.font[1], "Fonts\\ARIALN.TTF", "the same font")
+    equal(label.font[2], 15)
+    equal(label.font[3], "OUTLINE")
+    equal(label.height, 15, "the label's box grows with it")
+    equal(label.width, 45)
+    equal(label.points[1][1], "TOPRIGHT", "still where the game put it")
+    state.settings.HOTBARHIGHLIGHT_LABEL_OPACITY.set(50)
+    equal(label.alpha, 0.5)
+    state.settings.HOTBARHIGHLIGHT_LABEL_SIZE.set(80)
+    equal(label.font[2], 8)
+    equal(label.height, 10, "never smaller than the game's own box")
+    state.settings.HOTBARHIGHLIGHT_ENABLED.set(false)
+    equal(label.font[2], 10)
+    equal(label.alpha, 1)
+    equal(label.width, 36)
+    state.settings.HOTBARHIGHLIGHT_ENABLED.set(true)
+    equal(label.font[2], 8)
+    state.settings.HOTBARHIGHLIGHT_LABEL_SIZE.set(999)
+    equal(state.hh.db.labelSize, 200, "kept in range")
+end)
+
+test("label look: anchors wait for combat to end; the font and opacity do not", function()
+    local state = fixture()
+    local label = state.label("ActionButton5")
+    state.combat = true
+    state.settings.HOTBARHIGHLIGHT_LABEL_PLACE.set("topleft")
+    state.settings.HOTBARHIGHLIGHT_LABEL_SIZE.set(120)
+    equal(label.points[1][1], "TOPRIGHT", "not in combat")
+    equal(label.font[2], 12, "the font at once")
+    state.clear()
+    state.slash("status")
+    contains(state.messages[12], "their place waits for combat to end")
+    state.combat = false
+    state.emit("PLAYER_REGEN_ENABLED")
+    equal(label.points[1][1], "TOPLEFT")
+    equal(label.justify, "LEFT")
+end)
+
+test("label look: another addon's size and place for a label become its base, with these settings on top", function()
+    local state = fixture()
+    local label = state.label("PetActionButton1")
+    local button = state.env.PetActionButton1
+    state.settings.HOTBARHIGHLIGHT_LABEL_SIZE.set(150)
+    equal(label.font[2], 15)
+    -- Another addon makes the pet bar's labels smaller, as Grimoire does.
+    label:SetFont("Fonts\\ARIALN.TTF", 6, "OUTLINE")
+    equal(label.font[2], 9, "150% of the other addon's 6")
+    -- And moves them, in the usual two calls.
+    label:ClearAllPoints()
+    label:SetPoint("TOPLEFT", button, "TOPLEFT", 1, -1)
+    equal(label.points[1][1], "TOPLEFT", "left as the other addon set it: the place setting is the game's own")
+    state.settings.HOTBARHIGHLIGHT_LABEL_PLACE.set("bottomright")
+    equal(label.points[1][1], "BOTTOMRIGHT")
+    label:ClearAllPoints()
+    label:SetPoint("TOP", button, "TOP", 0, -1)
+    state.runTimers()
+    equal(label.points[1][1], "BOTTOMRIGHT", "this addon's place again, a frame later")
+    equal(#label.points, 1)
+    -- Back to the game's own place: the other addon's last anchors, not the first ones seen.
+    state.settings.HOTBARHIGHLIGHT_LABEL_PLACE.set("game")
+    state.settings.HOTBARHIGHLIGHT_LABEL_SIZE.set(100)
+    equal(label.points[1][1], "TOP")
+    equal(label.font[2], 6)
+end)
+
+-- The highlight's area --------------------------------------------------------------
+
+test("highlight area: only the buttons shown, when the bar shows fewer than it holds", function()
+    local state = fixture()
+    state.hold("SHIFT")
+    local glow = state.glowOf("MultiBarBottomLeft")
+    equal(glow.points[1][2], state.env.MultiBarBottomLeft, "the whole bar by default")
+    -- Nine icons: the last three are hidden.
+    for index = 10, 12 do state.env["MultiBarBottomLeftButton" .. index].shown = false end
+    state.settings.HOTBARHIGHLIGHT_AREA.set("buttons")
+    equal(#glow.points, 2)
+    equal(glow.points[1][1], "TOPLEFT")
+    equal(glow.points[1][2], state.env.UIParent)
+    equal(glow.points[1][3], "BOTTOMLEFT", "measured from the screen's corner")
+    equal(glow.points[1][4], 100, "the first button's left")
+    equal(glow.points[1][5], 265, "the buttons' top")
+    equal(glow.points[2][4], 100 + 9 * 45, "the ninth button's right")
+    equal(glow.points[2][5], 220, "the buttons' bottom")
+    -- The thin line goes around the same box, 3 px out.
+    state.settings.HOTBARHIGHLIGHT_STYLE.set("line")
+    local border = state.borderOf("MultiBarBottomLeft")
+    equal(border.points[1][4], 97)
+    equal(border.points[2][4], 100 + 9 * 45 + 3)
+    state.settings.HOTBARHIGHLIGHT_STYLE.set("glow")
+    -- A slot the game fades out instead of hiding counts as hidden too; the box is read each time.
+    state.env.MultiBarBottomLeftButton9.alpha = 0
+    state.hold()
+    state.hold("SHIFT")
+    equal(glow.points[2][4], 100 + 8 * 45)
+    -- A bar at 80% size: its buttons' places are in its own units.
+    for index = 1, 12 do state.env["MultiBarBottomLeftButton" .. index].scale = 0.8 end
+    state.hold()
+    state.hold("SHIFT")
+    equal(glow.points[1][4], 80)
+    equal(glow.points[2][4], (100 + 8 * 45) * 0.8)
+    -- Back to the whole bar.
+    state.settings.HOTBARHIGHLIGHT_AREA.set("bar")
+    equal(glow.points[1][2], state.env.MultiBarBottomLeft)
+    equal(#glow.points, 2)
+end)
+
+test("highlight area: with no button's place readable, the whole bar is used", function()
+    local state = fixture({db = {area = "buttons"}})
+    for index = 1, 12 do state.env["MultiBarBottomLeftButton" .. index].rect = nil end
+    state.hold("SHIFT")
+    equal(state.glowOf("MultiBarBottomLeft").shown, true)
+    equal(state.glowOf("MultiBarBottomLeft").points[1][2], state.env.MultiBarBottomLeft)
+    state.hold("CTRL")
+    equal(state.glowOf("MultiBarBottomRight").points[1][2], state.env.UIParent, "a bar whose buttons do read")
+end)
+
 -- Other clients, failures, and the rule -----------------------------------------------
 
 test("a client with an older main bar name and fewer bars still works", function()
@@ -798,9 +1019,12 @@ test("a part that fails to start is reported and the others still start", functi
 end)
 
 test("source scan: nothing binds, casts, moves a bar, or sends anything", function()
+    -- Anchors do change, but only on the addon's own highlight frames and on
+    -- key labels; the stand-in raises an error if a bar or a button is
+    -- anchored, sized, scaled or re-parented, in every test.
     local banned = {"SendChatMessage", "SendAddonMessage", "C_ChatInfo", "DoEmote", "SetRaidTarget", "SetBinding",
         "SetOverrideBinding", "SaveBindings", "SetAttribute", "RunMacroText", "CastSpell", "UseAction",
-        "SetParent", "ClearAllPoints", "SetScale", "RegisterStateDriver", "SetCVar", "ConsoleExec"}
+        "SetParent", "SetScale", "RegisterStateDriver", "SetCVar", "ConsoleExec"}
     for _, path in ipairs(FILES) do
         local file = assert(io.open(path))
         local text = file:read("*a")

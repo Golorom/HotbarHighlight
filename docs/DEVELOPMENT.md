@@ -2,12 +2,12 @@
 
 ## Rules
 
-1. Looks only. No key binding, no secure attributes, no moving or resizing the game's frames, no casting, no console variables.
+1. Looks only. No key binding, no secure attributes, no moving or resizing the game's bars or buttons, no casting, no console variables. The one thing of the game's that is re-anchored is a button's key label, inside its own button, out of combat.
 2. Nothing is ever sent to other players: no chat, emotes, markers or addon messages.
 3. No required dependencies and no bundled libraries.
 4. Every part starts through `Start` in `Core.lua`, so one failure is reported and the rest still run.
 
-The test "source scan" enforces 1 and 2 by searching every file for the calls involved.
+The test "source scan" enforces 1 and 2 by searching every file for the calls involved, and the stand-in raises an error in any test if a bar or a button is anchored, sized, scaled or re-parented.
 
 ## Tests
 
@@ -26,7 +26,7 @@ Add a test with each change. When the game is found to behave differently from t
 1. `/hh status`: every bar you use is found, with the layer you expect.
 2. Hold each modifier in turn out of combat, then in combat on a training dummy.
 3. Open and close Edit Mode while holding a modifier.
-4. Rebind a key and look at the label.
+4. Rebind a key and look at the label. Change the label place and size out of combat and in combat.
 5. BugSack: no errors naming `HotbarHighlight`.
 
 ## Releases

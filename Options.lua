@@ -94,6 +94,10 @@ function HH.InitializeOptions()
     Flag("HOTBARHIGHLIGHT_BORDER", "Highlight around the bar", "border", true,
         "A glow or a line around the bar of the modifiers you hold. Off: that bar only stays bright while the "
             .. "others fade.")
+    Dropdown("HOTBARHIGHLIGHT_AREA", "Highlight goes around", "bar", HH.AREAS,
+        function() return HH.db.area end, function(value) HH.db.area = value end,
+        "The whole bar: the bar's frame, as the game sizes it. Only the buttons shown: the smallest box around "
+            .. "the buttons you can see, for a bar set to fewer icons or with its empty slots hidden.")
     Dropdown("HOTBARHIGHLIGHT_STYLE", "Highlight style", "glow", HH.STYLES,
         function() return HH.db.style end, function(value) HH.db.style = value end,
         "Soft glow: a light around the bar that fades outward. Thin line: a plain frame.")
@@ -131,6 +135,18 @@ function HH.InitializeOptions()
         "How a button shows its key. Short: one letter per modifier, then the key (S1 for Shift-1, AC1 for "
             .. "Alt-Ctrl-1). Key only: just the key; the highlighted bar tells you the modifier. The game's own: "
             .. "left as the game writes it (s-1).")
+    Dropdown("HOTBARHIGHLIGHT_LABEL_PLACE", "Key label place", "game", HH.LABEL_PLACES,
+        function() return HH.db.labelPlace end, function(value) HH.db.labelPlace = value end,
+        "Where the key label sits in its button: a corner, a side, or the center. The game's own leaves it where "
+            .. "the game puts it. A change made in combat shows when the fight ends.")
+    Slider("HOTBARHIGHLIGHT_LABEL_X", "Key label left/right", "labelX", HH.LABEL_OFFSET_MIN, HH.LABEL_OFFSET_MAX, 0,
+        "%d px", "Moves the label from its place, left (below 0) or right. Not used with the game's own place.")
+    Slider("HOTBARHIGHLIGHT_LABEL_Y", "Key label down/up", "labelY", HH.LABEL_OFFSET_MIN, HH.LABEL_OFFSET_MAX, 0,
+        "%d px", "Moves the label from its place, down (below 0) or up. Not used with the game's own place.")
+    Slider("HOTBARHIGHLIGHT_LABEL_SIZE", "Key label size", "labelSize", HH.LABEL_SIZE_MIN, HH.LABEL_SIZE_MAX, 100,
+        "%d%%", "The label's text size, in percent of the size it has without this addon.")
+    Slider("HOTBARHIGHLIGHT_LABEL_OPACITY", "Key label opacity", "labelOpacity", HH.LABEL_OPACITY_MIN,
+        HH.LABEL_OPACITY_MAX, 100, "%d%%", "How visible the labels are.")
     Heading(layout, "Bars")
     for _, bar in ipairs(HH.BARS) do
         Dropdown("HOTBARHIGHLIGHT_LAYER_" .. bar.key:upper(), bar.label, "auto", HH.LAYER_CHOICES,
@@ -158,8 +174,9 @@ function HH.ReportStatus()
     for _, line in ipairs(HH.StatusLines()) do
         HH.Report(line)
     end
-    local tracked, changed = HH.LabelCount()
-    HH.Report(string.format("Key labels: %d found, %d shortened.", tracked, changed))
+    local tracked, changed, looked, waiting = HH.LabelCount()
+    HH.Report(string.format("Key labels: %d found, %d shortened, %d with a changed look%s.", tracked, changed,
+        looked, waiting and "; their place waits for combat to end" or ""))
     if #HH.startFailures > 0 then
         HH.Report("Did not start: " .. table.concat(HH.startFailures, ", ") .. ".")
     end

@@ -126,11 +126,79 @@ local EDGES = {
     {"TOPRIGHT", "BOTTOMRIGHT", false},
 }
 
+-- A button counts as shown when it is shown and not faded out (the game
+-- hides an empty slot either way, depending on the build).
+local function Shown(button)
+    if type(button.IsShown) == "function" then
+        local shown = button:IsShown()
+        if not HH.IsSecret(shown) and shown ~= true then
+            return false
+        end
+    end
+    if type(button.GetAlpha) == "function" then
+        local alpha = button:GetAlpha()
+        if not HH.IsSecret(alpha) and type(alpha) == "number" and alpha <= 0.01 then
+            return false
+        end
+    end
+    return true
+end
+
+-- The box around the bar's shown buttons, in UIParent's units from the
+-- screen's bottom left; nil when no shown button has a place that reads.
+local function ButtonBox(entry)
+    if type(UIParent.GetEffectiveScale) ~= "function" then
+        return nil
+    end
+    local base = UIParent:GetEffectiveScale()
+    if HH.IsSecret(base) or type(base) ~= "number" or base <= 0 then
+        return nil
+    end
+    local box
+    for _, each in ipairs(entry.buttons) do
+        local button = each.button
+        if Shown(button) and type(button.GetLeft) == "function" and type(button.GetEffectiveScale) == "function" then
+            local left, right, top, bottom = button:GetLeft(), button:GetRight(), button:GetTop(), button:GetBottom()
+            local scale = button:GetEffectiveScale()
+            local readable = true
+            for _, value in ipairs({left or false, right or false, top or false, bottom or false, scale or false}) do
+                if HH.IsSecret(value) or type(value) ~= "number" then
+                    readable = false
+                end
+            end
+            if readable and scale > 0 then
+                local factor = scale / base
+                left, right, top, bottom = left * factor, right * factor, top * factor, bottom * factor
+                if not box then
+                    box = {left = left, right = right, top = top, bottom = bottom}
+                else
+                    box.left, box.right = math.min(box.left, left), math.max(box.right, right)
+                    box.top, box.bottom = math.max(box.top, top), math.min(box.bottom, bottom)
+                end
+            end
+        end
+    end
+    return box
+end
+
+-- A highlight frame around the bar's frame, or around the shown buttons'
+-- box. The frame is this addon's own, so it may move at any time.
+local function Surround(frame, entry, padding, box)
+    frame:ClearAllPoints()
+    if box then
+        frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", box.left - padding, box.top + padding)
+        frame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", box.right + padding, box.bottom - padding)
+    else
+        frame:SetPoint("TOPLEFT", entry.frame, "TOPLEFT", -padding, padding)
+        frame:SetPoint("BOTTOMRIGHT", entry.frame, "BOTTOMRIGHT", padding, -padding)
+    end
+    frame.boxed = box ~= nil
+end
+
 local function MakeBorder(entry)
     local border = CreateFrame("Frame", nil, UIParent)
     border:SetFrameStrata("MEDIUM")
-    border:SetPoint("TOPLEFT", entry.frame, "TOPLEFT", -BORDER_PADDING, BORDER_PADDING)
-    border:SetPoint("BOTTOMRIGHT", entry.frame, "BOTTOMRIGHT", BORDER_PADDING, -BORDER_PADDING)
+    Surround(border, entry, BORDER_PADDING)
     border.edges = {}
     for index, edge in ipairs(EDGES) do
         local texture = border:CreateTexture(nil, "OVERLAY")
@@ -202,8 +270,7 @@ end
 local function MakeGlow(entry)
     local glow = CreateFrame("Frame", nil, UIParent)
     glow:SetFrameStrata(StrataBelow(entry.frame))
-    glow:SetPoint("TOPLEFT", entry.frame, "TOPLEFT", -GLOW_PADDING, GLOW_PADDING)
-    glow:SetPoint("BOTTOMRIGHT", entry.frame, "BOTTOMRIGHT", GLOW_PADDING, -GLOW_PADDING)
+    Surround(glow, entry, GLOW_PADDING)
     glow.pieces = {}
     local folder = "Interface\\AddOns\\" .. HH.ADDON .. "\\Textures\\"
     for index, piece in ipairs(GLOW_PIECES) do
@@ -333,6 +400,13 @@ local function Border(entry, on)
     if not entry.border then
         entry.border = MakeBorder(entry)
         entry.glow = MakeGlow(entry)
+    end
+    -- Around the shown buttons only: their box as it is now, each time the
+    -- highlight comes up (buttons may have appeared or gone since).
+    local box = HH.db.area == "buttons" and ButtonBox(entry) or nil
+    if box or entry.border.boxed then
+        Surround(entry.border, entry, BORDER_PADDING, box)
+        Surround(entry.glow, entry, GLOW_PADDING, box)
     end
     local r, g, b, alpha = HH.Color()
     if HH.db.style == "line" then

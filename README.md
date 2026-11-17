@@ -6,7 +6,7 @@ If your action bars are layers of the same keys (a 12-button mouse grid with Shi
 
 Interface 16001 (World of Warcraft: Forever). Slash command: `/hh`.
 
-Status: 0.2.1. Early, and played on one setup only (five bars on a 12-button mouse grid, default interface). Please report what you see on yours.
+Status: 0.3.0. Early, and played on one setup only (five bars on a 12-button mouse grid, default interface). Please report what you see on yours.
 
 ## What it does
 
@@ -14,12 +14,13 @@ Status: 0.2.1. Early, and played on one setup only (five bars on a 12-button mou
 - **Highlights the bar you are on.** Hold Shift, Ctrl, Alt or a mix: the bar of that layer gets a soft glow in a color you pick (or a thin line), the other bound bars fade to an opacity you choose. Let go and everything is as it was, including any opacity a bar had before.
 - **Stays out of the way.** Bars with no key bindings are never touched. Modifiers that no bar uses change nothing, so Alt as a self-cast key or Shift while typing in chat does not make the bars flicker. Edit Mode shows the bars as they are.
 - **Shortens key labels.** One letter per modifier, then the key: `S1`, `C1`, `AS1`, `AC1`. Or the key alone (`1`), since the highlighted bar already tells you the modifier. Or leave the game's labels untouched.
+- **Lets you style key labels.** Put them in any corner, on a side or in the center of the button, nudge them, make them bigger or smaller, and fade them.
 
 It covers Action Bars 1 to 8, the pet bar and the stance bar of the default interface.
 
 ## What it does not do
 
-It changes how bars look and nothing else. It does not bind keys, change what a button does, move or resize bars, cast anything, or send anything to other players. A test scans the source for such calls on every run.
+It changes how bars look and nothing else. It does not bind keys, change what a button does, move or resize bars or buttons, cast anything, or send anything to other players. The tests check this on every run.
 
 It works with the game's own action bars. Bar replacement addons (Bartender, Dominos, ElvUI and the like) use their own frames and are not covered.
 
@@ -32,6 +33,7 @@ Options, AddOns, Hotbar Highlight, or `/hh`.
 | Enabled | on | Off restores bars and key labels to the game's own. |
 | Other bars' opacity | 40% | How visible the other bound bars stay while one is highlighted. 100% does not fade them. |
 | Highlight around the bar | on | Off: the bar only stays bright while the others fade. |
+| Highlight goes around | the whole bar | Or only the buttons shown, for a bar set to fewer icons or with empty slots hidden. |
 | Highlight style | soft glow | Soft glow: a light around the bar that fades outward. Thin line: a plain frame. |
 | Highlight color | gold | Any color, from the game's color picker. |
 | Highlight opacity | 90% | How strong the glow or line is. |
@@ -40,6 +42,8 @@ Options, AddOns, Hotbar Highlight, or `/hh`.
 | With no modifier held | every bar normal | Or: keep the unmodified bar highlighted and the others faded until you hold a modifier. |
 | Only in combat | off | Highlight and fade only during a fight. |
 | Key labels | short | Short (`S1`), key only (`1`), or the game's own (`s-1`). |
+| Key label place, left/right, down/up | the game's own, 0, 0 | A corner, a side or the center of the button, then offsets in pixels. |
+| Key label size, opacity | 100%, 100% | In percent of what the label has without this addon. |
 | One choice per bar | auto | Auto reads the layer from the bar's keys. Or fix a layer, or leave the bar alone. |
 
 ## Commands

@@ -1,8 +1,8 @@
 ## Interface: 16001
 ## Title: Hotbar Highlight
-## Notes: Highlights the action bar of the modifier keys you hold and fades the others. Short key labels.
+## Notes: Highlights the action bar of the modifier keys you hold and fades the others. Short key labels you can move, resize and fade.
 ## Author: Golorom
-## Version: 0.2.1
+## Version: 0.3.0
 ## IconTexture: Interface\Icons\INV_Misc_Key_03
 ## Category: Action Bars
 ## SavedVariables: HotbarHighlightDB

@@ -39,6 +39,8 @@ While a modifier is held, an `OnUpdate` check runs five times a second and re-ap
 - `HookScript` on a bar's `OnShow` and `OnHide`, and on `EditModeManagerFrame`, to follow visibility.
 - The key label is each button's `HotKey` font string. Its `SetText` is hooked with `hooksecurefunc`, so the game's write runs first and unchanged; the hook then writes the short text. A flag stops the hook from answering its own write. Only text is written: font, color, size and anchors are the game's.
 - A button with no key keeps the game's text, which is its range dot.
+- Label look. Each label's base look (font, opacity, anchors, justification, box) is read when the label is first met, and kept current by the same kind of hook on `SetFont`, `SetAlpha`, `ClearAllPoints`, `SetPoint`, `SetJustifyH` and the size setters: a call from the game or another addon updates the base, and the settings are put back on top (the font at once, anchors on the next frame, after the caller's last `SetPoint`). Size is the base font at the set percent; opacity the base opacity times the percent; a place replaces the base anchors with one anchor on the label's own button. With a place or a size other than 100% the label's box takes the button's width so longer or bigger text is not cut. Anchors and box change only out of combat; `PLAYER_REGEN_ENABLED` applies what waited. At the defaults none of this runs.
+- Highlight area "only the buttons shown": each time the highlight comes up, the shown buttons' edges (`GetLeft` and the like, times the button's scale over `UIParent`'s) give a box, and the highlight frames are anchored to `UIParent` at that box. A button counts as shown when `IsShown()` is true and its opacity is above zero. If no button's place reads, the bar's frame is used.
 
 None of this was confirmed line by line against the Forever client's interface source, but 0.1.0 ran in that client: the five standard bars and the pet bar were found, faded and labelled as intended. `/hh status` reports what was found, which is the first thing to check when something does not show.
 
@@ -48,4 +50,4 @@ On Forever some values are "secret" to addon code in combat. Nothing this addon 
 
 ## Not covered
 
-Bar replacement addons, the extra action button, vehicle and override bars, and per-button highlighting.
+Bar replacement addons, the extra action button, vehicle and override bars, per-button highlighting, and the macro name and stack count texts on buttons.
