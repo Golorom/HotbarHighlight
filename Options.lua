@@ -140,9 +140,11 @@ function HH.InitializeOptions()
         "Where the key label sits in its button: a corner, a side, or the center. The game's own leaves it where "
             .. "the game puts it. A change made in combat shows when the fight ends.")
     Slider("HOTBARHIGHLIGHT_LABEL_X", "Key label left/right", "labelX", HH.LABEL_OFFSET_MIN, HH.LABEL_OFFSET_MAX, 0,
-        "%d px", "Moves the label from its place, left (below 0) or right. Not used with the game's own place.")
+        "%d px", "Moves the label left (below 0) or right: from the place chosen above, or from where the game "
+            .. "puts it.")
     Slider("HOTBARHIGHLIGHT_LABEL_Y", "Key label down/up", "labelY", HH.LABEL_OFFSET_MIN, HH.LABEL_OFFSET_MAX, 0,
-        "%d px", "Moves the label from its place, down (below 0) or up. Not used with the game's own place.")
+        "%d px", "Moves the label down (below 0) or up: from the place chosen above, or from where the game puts "
+            .. "it.")
     Slider("HOTBARHIGHLIGHT_LABEL_SIZE", "Key label size", "labelSize", HH.LABEL_SIZE_MIN, HH.LABEL_SIZE_MAX, 100,
         "%d%%", "The label's text size, in percent of the size it has without this addon.")
     Slider("HOTBARHIGHLIGHT_LABEL_OPACITY", "Key label opacity", "labelOpacity", HH.LABEL_OPACITY_MIN,
@@ -174,9 +176,14 @@ function HH.ReportStatus()
     for _, line in ipairs(HH.StatusLines()) do
         HH.Report(line)
     end
-    local tracked, changed, looked, waiting = HH.LabelCount()
-    HH.Report(string.format("Key labels: %d found, %d shortened, %d with a changed look%s.", tracked, changed,
-        looked, waiting and "; their place waits for combat to end" or ""))
+    local tracked, changed, looked, waiting, refused, reason = HH.LabelCount()
+    HH.Report(string.format("Key labels: %d found, %d shortened, %d with a changed look%s. Place %s, offsets %d, %d, "
+        .. "size %d%%, opacity %d%%.", tracked, changed, looked,
+        waiting and "; their place waits for combat to end" or "", HH.db.labelPlace, HH.db.labelX, HH.db.labelY,
+        HH.db.labelSize, HH.db.labelOpacity))
+    if refused > 0 then
+        HH.Report(string.format("%d key labels could not be moved. First: %s", refused, tostring(reason)))
+    end
     if #HH.startFailures > 0 then
         HH.Report("Did not start: " .. table.concat(HH.startFailures, ", ") .. ".")
     end

@@ -42,7 +42,7 @@ Options, AddOns, Hotbar Highlight, or `/hh`.
 | With no modifier held | every bar normal | Or: keep the unmodified bar highlighted and the others faded until you hold a modifier. |
 | Only in combat | off | Highlight and fade only during a fight. |
 | Key labels | short | Short (`S1`), key only (`1`), or the game's own (`s-1`). |
-| Key label place, left/right, down/up | the game's own, 0, 0 | A corner, a side or the center of the button, then offsets in pixels. |
+| Key label place, left/right, down/up | the game's own, 0, 0 | A corner, a side or the center of the button. The offsets, in pixels, move the label from that place, or from where the game puts it. |
 | Key label size, opacity | 100%, 100% | In percent of what the label has without this addon. |
 | One choice per bar | auto | Auto reads the layer from the bar's keys. Or fix a layer, or leave the bar alone. |
 

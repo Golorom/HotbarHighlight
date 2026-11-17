@@ -15,6 +15,7 @@ local _, HH = ...
 --   size      the base font at the set percent
 --   opacity   the base opacity times the set percent
 --   place     the label's anchors, in place of the base ones
+--   offsets   added to the place, or to the base anchors with no place set
 -- The base is read once and then kept up to date by hooks (hooksecurefunc:
 -- the caller's own call runs first, untouched): when anything else sets the
 -- label's text, font, anchors or size, the hook notes the new base and puts
@@ -24,6 +25,9 @@ local _, HH = ...
 --
 -- Anchors and sizes of a label change only out of combat; a change asked for
 -- in combat waits for its end. Text, font and opacity change at any time.
+--
+-- Each label is moved on its own: one that refuses does not stop the rest,
+-- and /hh status says how many refused and why.
 --
 -- With every look setting at its default nothing but the text is touched,
 -- and a button with no key keeps the game's text (its range dot).
@@ -49,6 +53,8 @@ local ready = false
 -- Anchors wait: for combat's end, or for the caller that is re-anchoring a
 -- label to finish (the next frame).
 local pendingPlace, scheduled = false, false
+-- Labels that refused their place the last time, and the first reason.
+local refused = {count = 0, reason = nil, told = false}
 
 local function ShortName(key)
     local known = KEY_NAMES[key]
@@ -212,10 +218,24 @@ local function ApplyAlpha(label, info)
     info.faded = percent ~= 100 or nil
 end
 
-local function PutOwnPoints(label, own)
+local function ReadPoints(label)
+    local points = {}
+    for index = 1, label:GetNumPoints() do
+        points[index] = {label:GetPoint(index)}
+    end
+    return points
+end
+
+-- The base anchors, moved by the offsets. An anchor with no frame named is
+-- on the label's parent.
+local function PutOwnPoints(label, info, dx, dy)
+    local own = info.own
+    local parent = type(label.GetParent) == "function" and label:GetParent() or info.button
     label:ClearAllPoints()
     for _, point in ipairs(own.points) do
-        label:SetPoint(unpack(point, 1, 5))
+        local x, y = point[4], point[5]
+        label:SetPoint(point[1], point[2] or parent, point[3] or point[1], (Number(x) and x or 0) + (dx or 0),
+            (Number(y) and y or 0) + (dy or 0))
     end
     if own.justify then
         label:SetJustifyH(own.justify)
@@ -228,12 +248,19 @@ local function ApplyPlace(label, info)
     if not own.points then
         return
     end
-    local spec = HH.db.enabled and PlaceSpec() or nil
-    local percent = HH.db.enabled and HH.db.labelSize or 100
-    if not spec and percent == 100 then
+    if info.dirty then
+        -- Someone else anchored it since: what it has now is its base.
+        info.dirty = nil
+        own.points = ReadPoints(label)
+    end
+    local on = HH.db.enabled
+    local spec = on and PlaceSpec() or nil
+    local percent = on and HH.db.labelSize or 100
+    local dx, dy = on and HH.db.labelX or 0, on and HH.db.labelY or 0
+    if not spec and percent == 100 and dx == 0 and dy == 0 then
         if info.placed then
             Write(function()
-                PutOwnPoints(label, own)
+                PutOwnPoints(label, info)
                 if own.width and own.height then
                     label:SetWidth(own.width)
                     label:SetHeight(own.height)
@@ -247,12 +274,13 @@ local function ApplyPlace(label, info)
     Write(function()
         if spec then
             label:ClearAllPoints()
-            label:SetPoint(spec.point, button, spec.point, spec.x + HH.db.labelX, spec.y + HH.db.labelY)
+            label:SetPoint(spec.point, button, spec.point, spec.x + dx, spec.y + dy)
             if own.justify then
                 label:SetJustifyH(spec.justify)
             end
         else
-            PutOwnPoints(label, own)
+            -- The game's own place, moved by the offsets.
+            PutOwnPoints(label, info, dx, dy)
         end
         -- Room for a bigger or longer text: the button's width, and the base
         -- height grown with the font.
@@ -277,8 +305,19 @@ local function PlaceAll()
         return
     end
     pendingPlace = false
+    local count, reason = 0, nil
     for label, info in pairs(labels) do
-        ApplyPlace(label, info)
+        local ok, failure = pcall(ApplyPlace, label, info)
+        if not ok then
+            count = count + 1
+            reason = reason or (info.name .. ": " .. tostring(failure))
+        end
+    end
+    refused.count, refused.reason = count, reason
+    if count > 0 and not refused.told then
+        -- Once a session, in chat; /hh status has it every time.
+        refused.told = true
+        HH.Report(string.format("%d key labels could not be moved. First: %s", count, reason))
     end
 end
 
@@ -339,20 +378,16 @@ local function Track(entry)
             ApplyAlpha(self, known)
         end
     end)
-    Hook(label, "ClearAllPoints", function(_, known)
+    -- Anchored by someone else: its anchors are read again on the next
+    -- frame, once the caller is done, and are the base from then on.
+    local function Anchored(_, known)
         if known.own.points then
-            known.own.points = {}
-            known.placed = nil
+            known.dirty, known.placed = true, nil
             SchedulePlace()
         end
-    end)
-    Hook(label, "SetPoint", function(_, known, ...)
-        if known.own.points then
-            known.own.points[#known.own.points + 1] = {...}
-            known.placed = nil
-            SchedulePlace()
-        end
-    end)
+    end
+    Hook(label, "ClearAllPoints", Anchored)
+    Hook(label, "SetPoint", Anchored)
     Hook(label, "SetJustifyH", function(_, known, justify)
         if known.own.points and known.own.justify then
             known.own.justify = justify
@@ -407,7 +442,7 @@ function HH.LabelCount()
             looked = looked + 1
         end
     end
-    return tracked, changed, looked, pendingPlace
+    return tracked, changed, looked, pendingPlace, refused.count, refused.reason
 end
 
 function HH.InitializeLabels()

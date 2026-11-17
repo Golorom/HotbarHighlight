@@ -3,7 +3,7 @@
 ## 0.3.0 (2026-11-17)
 
 Added
-- Key label look: where the label sits in its button (a corner, a side or the center, with left/right and down/up offsets), its size in percent, and its opacity. Whatever look a label has from the game or from another addon is the base, and these settings go on top, so an addon that sizes or places the same labels is not fought. A label's place changes out of combat; a change made in a fight shows when it ends.
+- Key label look: where the label sits in its button (a corner, a side or the center), left/right and down/up offsets that also work from the game's own place, its size in percent, and its opacity. Each label is moved on its own; if any refuse, a chat line and `/hh status` say how many and why. Whatever look a label has from the game or from another addon is the base, and these settings go on top, so an addon that sizes or places the same labels is not fought. A label's place changes out of combat; a change made in a fight shows when it ends.
 - Highlight area: around the whole bar (as before), or only around the buttons shown, for a bar set to fewer icons or with empty slots hidden.
 
 ## 0.2.1 (2026-11-17)
