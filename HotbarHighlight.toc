@@ -1,0 +1,15 @@
+## Interface: 16001
+## Title: Hotbar Highlight
+## Notes: Highlights the action bar of the modifier keys you hold and fades the others. Short key labels.
+## Author: Golorom
+## Version: 0.1.0
+## IconTexture: Interface\Icons\INV_Misc_Key_03
+## Category: Action Bars
+## SavedVariables: HotbarHighlightDB
+## X-License: MIT
+## X-Website: https://github.com/Golorom/HotbarHighlight
+
+Core.lua
+Bars.lua
+Labels.lua
+Options.lua
