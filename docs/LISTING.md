@@ -12,7 +12,7 @@ Text for the project pages on CurseForge and Wago.
 | Source | https://github.com/Golorom/HotbarHighlight |
 | Issues | https://github.com/Golorom/HotbarHighlight/issues |
 | Donation link | https://boosty.to/goromajur/donate |
-| Logo | `docs/images/thumbnail-512.png` (square, also as `thumbnail-1024.png`) |
+| Logo | `docs/images/thumbnail-512.png` (square, also as `thumbnail-1024.png`). Wide version `docs/images/wide-1280x640.png`. |
 | Screenshots | `.previews/1-alt-ctrl-held.png`, `.previews/2-alt-shift-held.png` |
 
 ## Description
