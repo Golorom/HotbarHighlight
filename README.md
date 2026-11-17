@@ -2,7 +2,7 @@
 
 [WoW: Forever] A visual aid addon that highlights the hotbar based on the currently pressed modifier or selector key.
 
-Hold Shift, Ctrl or Alt and the action bar bound to that modifier glows while the others fade.
+It shows which action bar you are on. Hold Shift, Ctrl or Alt and the bar bound to that modifier glows while the others fade.
 
 - Made for the default UI. A custom UI or an action bar addon may not work.
 - World of Warcraft Forever, interface 16001.

@@ -5,7 +5,7 @@ Text for the project pages on CurseForge and Wago.
 | Field | Text |
 |---|---|
 | Name | Hotbar Highlight |
-| Summary | Hold a modifier and the action bar bound to it glows while the others fade. Made for the default UI. |
+| Summary | A visual aid addon. Hold a modifier and the action bar bound to it glows while the others fade. Made for the default UI. |
 | Category | Action Bars |
 | Game version | World of Warcraft Forever, interface 16001 |
 | License | MIT |
@@ -15,7 +15,7 @@ Text for the project pages on CurseForge and Wago.
 
 ## Description
 
-Hold Shift, Ctrl or Alt and the action bar bound to that modifier glows while the others fade.
+A visual aid addon. Hold Shift, Ctrl or Alt and the action bar bound to that modifier glows while the others fade.
 
 Made for the default UI. A custom UI or an action bar addon may not work.
 

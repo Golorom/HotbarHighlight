@@ -2,7 +2,7 @@
 
 ## 1.0.0 (2026-11-17)
 
-First release. Made for the default UI. A custom UI or an action bar addon may not work.
+First release of this visual aid addon. Made for the default UI. A custom UI or an action bar addon may not work.
 
 - Hold Shift, Ctrl or Alt and the action bar bound to that modifier glows while the others fade.
 - Each bar's modifier is read from your key bindings. A bar can also be set by hand or left alone.
