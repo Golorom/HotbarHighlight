@@ -33,7 +33,7 @@ Made for the default UI. A custom UI or an action bar addon may not work.
 
 Settings open with `/hh` or from Options, AddOns, Hotbar Highlight. `/hh status` lists what the addon found on your bars.
 
-Free and open source. Donations are welcome at https://boosty.to/goromajur/donate. With a card issued outside Russia choose USD or EUR at checkout.
+Free and open source. Donations are welcome at https://boosty.to/goromajur/donate.
 
 ## After the page exists
 

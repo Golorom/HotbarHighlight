@@ -65,7 +65,7 @@ Open an issue with the output of `/hh status`, the BugSack text if any, and your
 
 ## Support
 
-Free and open source. Donations are welcome at [boosty.to/goromajur/donate](https://boosty.to/goromajur/donate). With a card issued outside Russia choose USD or EUR at checkout.
+Free and open source. Donations are welcome at [boosty.to/goromajur/donate](https://boosty.to/goromajur/donate).
 
 ## Documentation
 
