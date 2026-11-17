@@ -1,7 +1,9 @@
 * text=auto eol=lf
 *.tga binary
+*.png binary
 tests export-ignore
 docs export-ignore
+.previews export-ignore
 .github export-ignore
 .gitattributes export-ignore
 .pkgmeta export-ignore

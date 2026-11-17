@@ -33,7 +33,7 @@ Add a test with each change. When the game is found to behave differently from t
 
 1. Set `## Version:` in `HotbarHighlight.toc` and add a `## <version>` section at the top of `CHANGELOG.md`.
 2. Commit and push to `main`. Then either push a tag `v<version>`, or open the Actions tab on GitHub, choose Release, and press "Run workflow" on `main` (the workflow makes the tag itself).
-3. The Release workflow runs the tests, checks that a pushed tag matches the TOC and that no release of that version exists, builds `HotbarHighlight-v<version>.zip` (the addon in a `HotbarHighlight` folder, without `tests`, `docs` and `.github`) and publishes it as a GitHub release with that changelog section as its notes.
+3. The Release workflow runs the tests, checks that a pushed tag matches the TOC and that no release of that version exists, builds `HotbarHighlight-v<version>.zip` (the addon in a `HotbarHighlight` folder, without `tests`, `docs`, `.previews` and `.github`) and publishes it as a GitHub release with that changelog section as its notes. A `release.json` goes with it. It names the zip and the game it is for (`forever`, the interface number from the TOC) in the BigWigs packager's layout, which addon managers read.
 4. Its second job, "publish", then runs the BigWigs packager for CurseForge and Wago, for each site that has a project ID in the TOC and a key in the repository's secrets (see [LISTING.md](LISTING.md)). With neither it does nothing. It has not run with real IDs yet.
 
 ## Layout
