@@ -8,6 +8,7 @@
 ## SavedVariables: HotbarHighlightDB
 ## X-License: MIT
 ## X-Website: https://github.com/Golorom/HotbarHighlight
+## X-Wago-ID: kGr9DgKy
 
 Core.lua
 Bars.lua
