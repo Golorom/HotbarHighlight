@@ -6,7 +6,7 @@ If your action bars are layers of the same keys (a 12-button mouse grid with Shi
 
 Interface 16001 (World of Warcraft: Forever). Slash command: `/hh`.
 
-Status: 0.3.0. Early, and played on one setup only (five bars on a 12-button mouse grid, default interface). Please report what you see on yours.
+Version 1.0.0. Played on one setup so far (five bars on a 12-button mouse grid, default interface). Please report what you see on yours.
 
 ## What it does
 
@@ -58,7 +58,7 @@ Options, AddOns, Hotbar Highlight, or `/hh`.
 
 Copy the folder into `World of Warcraft\_forever_\Interface\AddOns\` and name it `HotbarHighlight`. Restart the game after adding the files.
 
-From a release: download `HotbarHighlight-<version>.zip` from the Releases page and unpack it into `AddOns`. Addon managers that install from a GitHub address (such as WowUp's "Install from URL") may accept this repository's address once a release exists; that has not been tried with the Forever client.
+From a release: download `HotbarHighlight-v<version>.zip` from the [Releases page](https://github.com/Golorom/HotbarHighlight/releases) and unpack it into `AddOns`. Addon managers that install from a GitHub address (such as WowUp's "Install from URL") may accept this repository's address; that has not been tried with the Forever client.
 
 No other addon is required. [BugSack](https://www.curseforge.com/wow/addons/bugsack) with [!BugGrabber](https://www.curseforge.com/wow/addons/bug-grabber) is recommended: if something goes wrong it shows the error text to include in a report.
 

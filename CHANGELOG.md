@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.0 (2026-11-17)
+
+First release. Everything below was played in the game on World of Warcraft: Forever before it went out.
+
+- While you hold Shift, Ctrl, Alt or a mix of them, the action bar whose keys use those modifiers gets a soft glow (or a thin line) and the other bound bars fade.
+- Each bar's layer is read from its key bindings. A bar can also be given a layer by hand or left alone.
+- The highlight goes around the whole bar or only around the buttons shown.
+- Key labels: short text (`S1`, `AC1`), the key alone, or the game's own; their place in the button, offsets, size and opacity.
+- Settings page (Options, AddOns, Hotbar Highlight) and `/hh`.
+
+Since 0.3.0: the label offsets also work from the game's own place, and each label is moved on its own.
+
 ## 0.3.0 (2026-11-17)
 
 Added
