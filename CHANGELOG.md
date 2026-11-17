@@ -2,17 +2,13 @@
 
 ## 1.0.0 (2026-11-17)
 
-The first release. Everything in it was played in the game on World of Warcraft Forever before it went out.
+First release. Made for the default UI. A custom UI or an action bar addon may not work.
 
-It is made for the game's default interface. With a custom UI or an action bar addon it may do nothing or look wrong, and I can't promise it will work there.
-
-- Hold Shift, Ctrl, Alt or a mix of them and the action bar that belongs to those keys gets a soft glow or a thin line, while the other bars fade.
-- The addon reads your key bindings to work out which bar belongs to which modifier. You can also set a bar by hand or have it left alone.
-- The highlight can go around the whole bar or only around the buttons you can see.
-- Key labels can be shortened to `S1` or `AC1`, shown as the key alone, or left as the game writes them. You can move, resize and fade them.
-- There is a settings page under Options, AddOns, Hotbar Highlight, and the `/hh` command.
-
-Compared with 0.3.0, the label offsets now also work from the game's own place, and each label is moved on its own.
+- Hold Shift, Ctrl or Alt and the action bar bound to that modifier glows while the others fade.
+- Each bar's modifier is read from your key bindings. A bar can also be set by hand or left alone.
+- Soft glow or thin line, any color, around the whole bar or only the visible buttons.
+- Key labels can be shortened, moved, resized and faded.
+- Settings page and the `/hh` command.
 
 ## 0.3.0 (2026-11-17)
 
