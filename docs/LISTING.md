@@ -12,7 +12,7 @@ Text for the project pages on CurseForge and Wago.
 | Source | https://github.com/Golorom/HotbarHighlight |
 | Issues | https://github.com/Golorom/HotbarHighlight/issues |
 | Donation link | https://boosty.to/goromajur/donate |
-| Logo | `docs/images/thumbnail-512.png` |
+| Logo | `docs/images/thumbnail-512.png` (square, also as `thumbnail-1024.png`) |
 | Screenshots | `.previews/1-alt-ctrl-held.png`, `.previews/2-alt-shift-held.png` |
 
 ## Description
@@ -46,7 +46,7 @@ Free and open source. Donations are welcome at https://boosty.to/goromajur/donat
 The WowUp Hub lists addons straight from GitHub releases. It has no page to fill in.
 
 - Game version. It reads the TOC. `## Interface: 16001` marks the addon as WoW Forever. Each release also carries `release.json` with the flavor `forever`.
-- Icon. The repository's social preview image. Upload `docs/images/social-preview-1280x640.png` under Settings, General, Social preview.
+- Icon. The repository's social preview image. Upload `docs/images/thumbnail-1024.png` under Settings, General, Social preview.
 - Screenshots. The `.previews` folder as it is at the release.
 - Category. The repository topic `action-bars`.
 - Donation link. `.github/FUNDING.yml`.
