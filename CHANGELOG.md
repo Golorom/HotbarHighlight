@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.1 (2026-11-17)
+
+No changes in game.
+
+- Published on Wago.
+- Releases now mark the addon as WoW Forever for WowUp and other addon managers.
+- Screenshot and shorter texts in the README.
+
 ## 1.0.0 (2026-11-17)
 
 First release of this visual aid addon. Made for the default UI. A custom UI or an action bar addon may not work.
