@@ -80,6 +80,8 @@ HH.DIM_MIN, HH.DIM_MAX, HH.DEFAULT_DIM = 10, 100, 40
 HH.THICKNESS_MIN, HH.THICKNESS_MAX, HH.DEFAULT_THICKNESS = 1, 6, 2
 HH.GLOW_MIN, HH.GLOW_MAX, HH.DEFAULT_GLOW = 6, 48, 18
 HH.OPACITY_MIN, HH.OPACITY_MAX, HH.DEFAULT_OPACITY = 20, 100, 90
+-- The inner glow's depth, in percent of a button's size.
+HH.INNER_MIN, HH.INNER_MAX, HH.DEFAULT_INNER = 0, 30, 14
 
 function HH.IsSecret(value)
     return type(issecretvalue) == "function" and issecretvalue(value) == true
@@ -138,6 +140,7 @@ function HH.Sanitize(saved)
         color = HH.SanitizeColor(saved.color),
         opacity = Whole(saved.opacity, HH.OPACITY_MIN, HH.OPACITY_MAX, HH.DEFAULT_OPACITY),
         glow = Whole(saved.glow, HH.GLOW_MIN, HH.GLOW_MAX, HH.DEFAULT_GLOW),
+        inner = Whole(saved.inner, HH.INNER_MIN, HH.INNER_MAX, HH.DEFAULT_INNER),
         thickness = Whole(saved.thickness, HH.THICKNESS_MIN, HH.THICKNESS_MAX, HH.DEFAULT_THICKNESS),
         idle = Choice(saved.idle, HH.IDLE, "all"),
         combatOnly = saved.combatOnly == true,

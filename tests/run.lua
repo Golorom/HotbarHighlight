@@ -60,7 +60,7 @@ local BAR_FRAMES = {
 
 -- options: bindings, db (saved settings), mainName (the main bar's frame
 -- name), without (frame names this client lacks), noSettings, noSwatch,
--- breakLabels, secretKeys.
+-- breakLabels, secretKeys, beforeLoad(env) (runs before the addon's files).
 local function fixture(options)
     options = options or {}
     local state = {frames = {}, messages = {}, mods = {}, combat = false, focus = nil, timers = {},
@@ -96,6 +96,9 @@ local function fixture(options)
         function frame:IsVisible() return self.shown end
         function frame:SetPoint(...) self.points[#self.points + 1] = {...} end
         function frame:SetFrameStrata(strata) self.strata = strata end
+        function frame:GetFrameStrata() return self.strata or "MEDIUM" end
+        function frame:GetWidth() return self.width or 45 end
+        function frame:GetEffectiveScale() return self.scale or 1 end
         function frame:CreateTexture()
             local texture = {points = {}}
             function texture:SetPoint(...) self.points[#self.points + 1] = {...} end
@@ -105,6 +108,9 @@ local function fixture(options)
             function texture:SetHeight(height) self.height = height end
             function texture:SetWidth(width) self.width = width end
             function texture:SetSize(width, height) self.width, self.height = width, height end
+            texture.shown = true
+            function texture:Show() self.shown = true end
+            function texture:Hide() self.shown = false end
             self.textures[#self.textures + 1] = texture
             return texture
         end
@@ -273,6 +279,7 @@ local function fixture(options)
     end
     function state.text(button) return state.labels[button].label.text end
 
+    if options.beforeLoad then options.beforeLoad(env) end
     env.HotbarHighlightDB = options.db
     state.hh = {}
     for _, path in ipairs(FILES) do
@@ -392,7 +399,8 @@ test("holding Shift highlights the Shift bar and fades the other bound bars; let
     equal(state.borderOf("MultiBarBottomLeft").shown, false, "not the line")
     equal(glow.parent, state.env.UIParent, "not a child of the game's bar")
     equal(glow.points[1][2], state.env.MultiBarBottomLeft, "anchored around the bar")
-    equal(#glow.textures, 8, "four sides and four corners")
+    equal(#glow.textures, 12, "four sides, four corners, four inner sides")
+    equal(glow.strata, "LOW", "one strata below the bar, so the buttons draw over the inner glow")
     equal(glow.textures[1].path, "Interface\\AddOns\\HotbarHighlight\\Textures\\GlowTop")
     equal(glow.textures[1].height, 18, "a side reaches 18 px out")
     equal(glow.textures[3].width, 18)
@@ -402,11 +410,36 @@ test("holding Shift highlights the Shift bar and fades the other bound bars; let
     near(glow.textures[1].tint[2], 0.82)
     near(glow.textures[1].tint[3], 0)
     near(glow.textures[1].tint[4], 0.9, "at 90%")
+    -- The inner glow: just inside each edge, the opposite side's texture, 14% of a 45 px button deep.
+    equal(glow.textures[9].path, "Interface\\AddOns\\HotbarHighlight\\Textures\\GlowBottom", "fades downward from the top edge")
+    equal(glow.textures[9].points[1][1], "TOPLEFT")
+    equal(glow.textures[9].points[1][3], "TOPLEFT", "inside the edge")
+    near(glow.textures[9].height, 6.3)
+    near(glow.textures[11].width, 6.3)
+    equal(glow.textures[11].path, "Interface\\AddOns\\HotbarHighlight\\Textures\\GlowRight")
     state.hold()
     equal(state.hh.state.active, false)
     equal(state.alpha("MainActionBar"), 1)
     equal(state.alpha("MultiBarBottomRight"), 0.8, "its own opacity is back")
     equal(state.bordered("MultiBarBottomLeft"), false)
+end)
+
+test("the inner glow follows the bar's own scale, and the glow sits below whatever strata the bar is in", function()
+    local state = fixture()
+    -- Edit Mode's Icon Size at 80%, and a bar the client keeps in a low strata.
+    state.env.MultiBarBottomLeftButton1.scale = 0.8
+    state.env.MultiBarBottomRight.strata = "LOW"
+    state.emit("UPDATE_BINDINGS")
+    state.hold("SHIFT")
+    near(state.glowOf("MultiBarBottomLeft").textures[9].height, 0.14 * 45 * 0.8)
+    state.hold("CTRL")
+    local glow = state.glowOf("MultiBarBottomRight")
+    equal(glow.shown, true)
+    equal(glow.strata, "LOW", "made at login, when the bar still said MEDIUM")
+    local low = fixture({beforeLoad = function(env) env.MultiBarBottomRight.strata = "LOW" end})
+    equal(low.glowOf("MultiBarBottomRight").strata, "BACKGROUND")
+    local lowest = fixture({beforeLoad = function(env) env.MultiBarBottomRight.strata = "BACKGROUND" end})
+    equal(lowest.glowOf("MultiBarBottomRight").strata, "BACKGROUND", "nothing lower")
 end)
 
 test("each layer has its bar: Ctrl, Alt+Shift, Alt+Ctrl", function()
@@ -563,6 +596,15 @@ test("the fade, the border and its look follow the settings at once", function()
     equal(glow.textures[8].width, 30)
     state.settings.HOTBARHIGHLIGHT_GLOW.set(500)
     equal(state.hh.db.glow, 48, "kept in range")
+    state.settings.HOTBARHIGHLIGHT_INNER.set(20)
+    near(glow.textures[10].height, 9, "20% of a button")
+    equal(glow.textures[10].shown, true)
+    state.settings.HOTBARHIGHLIGHT_INNER.set(0)
+    equal(glow.textures[9].shown, false, "0: no inner glow")
+    equal(glow.textures[12].shown, false)
+    equal(glow.textures[1].shown, true, "the outer glow stays")
+    state.settings.HOTBARHIGHLIGHT_INNER.set(14)
+    equal(glow.textures[9].shown, true)
     state.settings.HOTBARHIGHLIGHT_COLOR.set("not a color")
     equal(state.hh.db.color, "ffffd100", "nonsense: gold")
     -- The thin line instead.
@@ -598,6 +640,7 @@ test("saved settings are repaired: only known keys and valid values survive", fu
     equal(db.style, "glow")
     equal(db.opacity, 90)
     equal(db.glow, 18)
+    equal(db.inner, 14)
     equal(db.thickness, 2)
     equal(db.idle, "all")
     equal(db.combatOnly, false)
@@ -623,6 +666,7 @@ test("the settings page lists every setting and a choice per bar", function()
     equal(state.registered, state.category)
     for _, variable in ipairs({"HOTBARHIGHLIGHT_ENABLED", "HOTBARHIGHLIGHT_DIM", "HOTBARHIGHLIGHT_BORDER",
         "HOTBARHIGHLIGHT_STYLE", "HOTBARHIGHLIGHT_COLOR", "HOTBARHIGHLIGHT_OPACITY", "HOTBARHIGHLIGHT_GLOW",
+        "HOTBARHIGHLIGHT_INNER",
         "HOTBARHIGHLIGHT_THICKNESS", "HOTBARHIGHLIGHT_IDLE", "HOTBARHIGHLIGHT_COMBAT",
         "HOTBARHIGHLIGHT_LABELS", "HOTBARHIGHLIGHT_LAYER_BAR1", "HOTBARHIGHLIGHT_LAYER_BAR8",
         "HOTBARHIGHLIGHT_LAYER_PET", "HOTBARHIGHLIGHT_LAYER_STANCE"}) do
@@ -784,7 +828,7 @@ test("each glow piece has its texture file: 32 x 32, 32-bit, white, clear at its
         equal(data:byte(17), 32, name .. " bits")
         equal(data:byte(19), 255, name .. " white")
     end
-    equal(count, 8)
+    equal(count, 12, "eight outer pieces and four inner ones, which reuse the sides' files")
     -- The top piece sits above the bar: clear on its top row, solid at the bottom.
     local top = assert(io.open("Textures/GlowTop.tga", "rb"))
     local data = top:read("*a")

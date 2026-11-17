@@ -6,7 +6,7 @@ If your action bars are layers of the same keys (a 12-button mouse grid with Shi
 
 Interface 16001 (World of Warcraft: Forever). Slash command: `/hh`.
 
-Status: 0.2.0. Early, and played on one setup only (five bars on a 12-button mouse grid, default interface). Please report what you see on yours.
+Status: 0.2.1. Early, and played on one setup only (five bars on a 12-button mouse grid, default interface). Please report what you see on yours.
 
 ## What it does
 
@@ -36,6 +36,7 @@ Options, AddOns, Hotbar Highlight, or `/hh`.
 | Highlight color | gold | Any color, from the game's color picker. |
 | Highlight opacity | 90% | How strong the glow or line is. |
 | Glow size, line thickness | 18 px, 2 px | How far the glow reaches; how thick the line is. |
+| Inner glow | 14% | How far the glow reaches in under the bar's edge, as a share of a button's size. It fills the gaps the buttons' round corners leave. 0 turns it off. |
 | With no modifier held | every bar normal | Or: keep the unmodified bar highlighted and the others faded until you hold a modifier. |
 | Only in combat | off | Highlight and fade only during a fight. |
 | Key labels | short | Short (`S1`), key only (`1`), or the game's own (`s-1`). |

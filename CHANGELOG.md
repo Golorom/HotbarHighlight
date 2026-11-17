@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1 (2026-11-17)
+
+Fixed
+- The glow's inner corners. The buttons' corners are round and the glow's inner edge was straight, so the world showed through at the bar's corners and where two buttons meet at an edge. The glow now also reaches a little way in under the bar's edge and sits one layer below the bar, so the buttons cover it except in those gaps. Setting: Inner glow (14% of a button's size; 0 turns it off).
+
 ## 0.2.0 (2026-11-17)
 
 0.1.0 was played in the game and worked: layers found from the keys, highlight and fade, short labels.

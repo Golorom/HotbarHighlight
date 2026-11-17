@@ -147,6 +147,13 @@ end
 -- corners, each a white texture whose opacity falls off away from the bar
 -- (Textures\Glow*.tga), tinted with the color. One file per piece, so no
 -- piece depends on turning a texture around.
+--
+-- The inner glow (0.2.1): the buttons' corners are round and the bar's edge
+-- is straight, so the world showed through at the bar's corners and where
+-- two buttons meet at an edge. Four more pieces lie just inside each edge
+-- and fade inward (each is the opposite side's texture). The glow's frame
+-- sits one strata below the bar, so the buttons cover the inner glow except
+-- where they leave room: at their round corners and between them.
 --   {file, the piece's point, the frame's point it sits on, second pair for
 --    a side (it stretches along the bar), which size it takes}
 local GLOW_PIECES = {
@@ -158,11 +165,43 @@ local GLOW_PIECES = {
     {"GlowTopRight", "BOTTOMLEFT", "TOPRIGHT"},
     {"GlowBottomLeft", "TOPRIGHT", "BOTTOMLEFT"},
     {"GlowBottomRight", "TOPLEFT", "BOTTOMRIGHT"},
+    {"GlowBottom", "TOPLEFT", "TOPLEFT", "TOPRIGHT", "TOPRIGHT", "innerHeight"},
+    {"GlowTop", "BOTTOMLEFT", "BOTTOMLEFT", "BOTTOMRIGHT", "BOTTOMRIGHT", "innerHeight"},
+    {"GlowRight", "TOPLEFT", "TOPLEFT", "BOTTOMLEFT", "BOTTOMLEFT", "innerWidth"},
+    {"GlowLeft", "TOPRIGHT", "TOPRIGHT", "BOTTOMRIGHT", "BOTTOMRIGHT", "innerWidth"},
 }
+
+local STRATA = {"BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG", "FULLSCREEN", "FULLSCREEN_DIALOG", "TOOLTIP"}
+
+-- The strata one below the frame's, so the frame's own art draws on top.
+local function StrataBelow(frame)
+    local strata = type(frame.GetFrameStrata) == "function" and frame:GetFrameStrata()
+    for index, name in ipairs(STRATA) do
+        if name == strata then
+            return STRATA[math.max(1, index - 1)]
+        end
+    end
+    return "LOW"
+end
+
+-- A button's size on the bar, in UIParent's units (Edit Mode's Icon Size
+-- scales the bar); 45, a standard button, when it does not read.
+local function ButtonSize(entry)
+    local first = entry.buttons[1] and entry.buttons[1].button
+    if first and type(first.GetWidth) == "function" and type(first.GetEffectiveScale) == "function"
+            and type(UIParent.GetEffectiveScale) == "function" then
+        local width, scale, base = first:GetWidth(), first:GetEffectiveScale(), UIParent:GetEffectiveScale()
+        if not HH.IsSecret(width) and not HH.IsSecret(scale) and not HH.IsSecret(base) and type(width) == "number"
+                and type(scale) == "number" and type(base) == "number" and width > 0 and scale > 0 and base > 0 then
+            return width * scale / base
+        end
+    end
+    return 45
+end
 
 local function MakeGlow(entry)
     local glow = CreateFrame("Frame", nil, UIParent)
-    glow:SetFrameStrata("MEDIUM")
+    glow:SetFrameStrata(StrataBelow(entry.frame))
     glow:SetPoint("TOPLEFT", entry.frame, "TOPLEFT", -GLOW_PADDING, GLOW_PADDING)
     glow:SetPoint("BOTTOMRIGHT", entry.frame, "BOTTOMRIGHT", GLOW_PADDING, -GLOW_PADDING)
     glow.pieces = {}
@@ -310,14 +349,27 @@ local function Border(entry, on)
         return
     end
     local size = HH.db.glow
+    local inner = HH.db.inner / 100 * ButtonSize(entry)
     for _, piece in ipairs(entry.glow.pieces) do
-        piece.texture:SetVertexColor(r, g, b, alpha)
+        local texture = piece.texture
+        texture:SetVertexColor(r, g, b, alpha)
         if piece.size == "height" then
-            piece.texture:SetHeight(size)
+            texture:SetHeight(size)
         elseif piece.size == "width" then
-            piece.texture:SetWidth(size)
+            texture:SetWidth(size)
+        elseif piece.size == "innerHeight" or piece.size == "innerWidth" then
+            if inner >= 1 then
+                if piece.size == "innerHeight" then
+                    texture:SetHeight(inner)
+                else
+                    texture:SetWidth(inner)
+                end
+                texture:Show()
+            else
+                texture:Hide()
+            end
         else
-            piece.texture:SetSize(size, size)
+            texture:SetSize(size, size)
         end
     end
     entry.border:Hide()

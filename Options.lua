@@ -114,6 +114,10 @@ function HH.InitializeOptions()
         HH.DEFAULT_OPACITY, "%d%%", "How strong the glow or line is.")
     Slider("HOTBARHIGHLIGHT_GLOW", "Glow size", "glow", HH.GLOW_MIN, HH.GLOW_MAX, HH.DEFAULT_GLOW, "%d px",
         "How far the soft glow reaches beyond the bar, in pixels.")
+    Slider("HOTBARHIGHLIGHT_INNER", "Inner glow", "inner", HH.INNER_MIN, HH.INNER_MAX, HH.DEFAULT_INNER, "%d%%",
+        "How far the soft glow reaches in under the bar's edge, as a share of a button's size. The buttons "
+            .. "cover it, so it shows only where they leave room: at their round corners and between them. "
+            .. "0 turns it off.")
     Slider("HOTBARHIGHLIGHT_THICKNESS", "Line thickness", "thickness", HH.THICKNESS_MIN, HH.THICKNESS_MAX,
         HH.DEFAULT_THICKNESS, "%d px", "The thin line's thickness, in pixels.")
     Dropdown("HOTBARHIGHLIGHT_IDLE", "With no modifier held", "all", HH.IDLE,
