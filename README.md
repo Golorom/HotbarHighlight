@@ -66,6 +66,10 @@ No other addon is required. [BugSack](https://www.curseforge.com/wow/addons/bugs
 
 Open an issue with the output of `/hh status`, the BugSack text if there is any, and which bars and key bindings you use.
 
+## Support
+
+Hotbar Highlight is free and stays free. If it makes your game nicer and you want to say thanks: [boosty.to/goromajur](https://boosty.to/goromajur) (the Donate button). With a card issued outside Russia, choose USD or EUR at checkout.
+
 ## Documentation
 
 - [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md): the design, file by file, and what it relies on in the game.

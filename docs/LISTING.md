@@ -37,6 +37,8 @@ Works with the game's own action bars (1 to 8, pet and stance). Bar replacement 
 
 Settings: Options, AddOns, Hotbar Highlight, or `/hh`. `/hh status` lists what was found on your bars.
 
+Free and open source. If you want to say thanks: https://boosty.to/goromajur (with a card issued outside Russia, choose USD or EUR at checkout).
+
 ## After the page exists
 
 1. Put the project's ID in `HotbarHighlight.toc`: `## X-Curse-Project-ID: <number>` and `## X-Wago-ID: <id from the Wago developer dashboard>`.
