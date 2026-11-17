@@ -149,6 +149,10 @@ function HH.InitializeOptions()
         "%d%%", "The label's text size, in percent of the size it has without this addon.")
     Slider("HOTBARHIGHLIGHT_LABEL_OPACITY", "Key label opacity", "labelOpacity", HH.LABEL_OPACITY_MIN,
         HH.LABEL_OPACITY_MAX, 100, "%d%%", "How visible the labels are.")
+    Flag("HOTBARHIGHLIGHT_LABEL_MATCH", "Pet and stance bar labels like the other bars'", "labelMatch", true,
+        "The key labels of the pet bar and the stance bar take the size and place of your action bars' labels, "
+            .. "whatever Icon Size these bars have in Edit Mode. Off: they stay as the game draws them. A change "
+            .. "made in combat shows when the fight ends.")
     Heading(layout, "Bars")
     for _, bar in ipairs(HH.BARS) do
         Dropdown("HOTBARHIGHLIGHT_LAYER_" .. bar.key:upper(), bar.label, "auto", HH.LAYER_CHOICES,
@@ -178,9 +182,9 @@ function HH.ReportStatus()
     end
     local tracked, changed, looked, waiting, refused, reason = HH.LabelCount()
     HH.Report(string.format("Key labels: %d found, %d shortened, %d with a changed look%s. Place %s, offsets %d, %d, "
-        .. "size %d%%, opacity %d%%.", tracked, changed, looked,
+        .. "size %d%%, opacity %d%%, pet and stance bar like the others %s.", tracked, changed, looked,
         waiting and "; their place waits for combat to end" or "", HH.db.labelPlace, HH.db.labelX, HH.db.labelY,
-        HH.db.labelSize, HH.db.labelOpacity))
+        HH.db.labelSize, HH.db.labelOpacity, HH.db.labelMatch and "on" or "off"))
     if refused > 0 then
         HH.Report(string.format("%d key labels could not be moved. First: %s", refused, tostring(reason)))
     end

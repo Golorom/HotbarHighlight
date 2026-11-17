@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0 (2026-11-17)
+
+- New setting, on by default. Key labels on the pet bar and the stance bar get the same size and place as on the action bars, whatever Icon Size these bars have in Edit Mode.
+
 ## 1.0.2 (2026-11-17)
 
 No changes in game.

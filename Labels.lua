@@ -29,8 +29,19 @@ local _, HH = ...
 -- Each label is moved on its own: one that refuses does not stop the rest,
 -- and /hh status says how many refused and why.
 --
--- With every look setting at its default nothing but the text is touched,
--- and a button with no key keeps the game's text (its range dot).
+-- Pet and stance bar (1.1.0). Their buttons are of another template than the
+-- action bars': the key label sits elsewhere, and Edit Mode's Icon Size
+-- scales the whole button, its label too, so the labels come out bigger or
+-- smaller than the action bars'. With the match setting on, each of these
+-- labels takes the base look of an action bar's label (the first button of
+-- Action Bar 1, 2 or 3): its font, anchors, justification and box, all
+-- divided by how much bigger the small bar's button is drawn, so on screen
+-- it has the same size and sits at the same distance from the corner. The
+-- other look settings go on top of that as on every bar.
+--
+-- With every look setting at its default nothing but the text is touched on
+-- the action bars, and a button with no key keeps the game's text (its
+-- range dot).
 
 local MODIFIER_LETTER = {ALT = "A", CTRL = "C", SHIFT = "S", META = "M"}
 
@@ -44,9 +55,13 @@ local KEY_NAMES = {
     BUTTON1 = "LM", BUTTON2 = "RM", BUTTON3 = "MM",
 }
 
--- label (font string) -> {command, name, button, own (its base look), and
--- what this addon changed: touched (text), sized, faded, placed}
+-- label (font string) -> {command, name, button, small (pet or stance bar),
+-- own (its base look), and what this addon changed: touched (text), sized,
+-- faded, placed}
 local labels = {}
+-- button name -> label, for the labels the small bars are matched to.
+local byName = {}
+local REFERENCES = {"ActionButton1", "MultiBarBottomLeftButton1", "MultiBarBottomRightButton1"}
 local writing = false
 -- Set once the part has started; until then nothing is hooked or written.
 local ready = false
@@ -198,14 +213,55 @@ local function ReadOwn(label)
     return own
 end
 
+local function Scale(frame)
+    local scale = type(frame) == "table" and type(frame.GetEffectiveScale) == "function"
+        and frame:GetEffectiveScale()
+    return Number(scale) and scale > 0 and scale or nil
+end
+
+-- For a pet or stance bar label with the match setting on: the action bar
+-- label it takes its look from, and how many of its own units make one of
+-- that label's units on screen. Nil: the label keeps its own base.
+local function Match(info)
+    if not info.small or not HH.db.enabled or not HH.db.labelMatch then
+        return nil
+    end
+    local scale = Scale(info.button)
+    if not scale then
+        return nil
+    end
+    for _, name in ipairs(REFERENCES) do
+        local known = byName[name] and labels[byName[name]]
+        local base = known and Scale(known.button)
+        if base and known.own.font then
+            return known, base / scale
+        end
+    end
+end
+
 local function ApplyFont(label, info)
     local own = info.own
-    local percent = HH.db.enabled and HH.db.labelSize or 100
-    if not own.font or (percent == 100 and not info.sized) then
+    if not own.font then
         return
     end
-    Write(function() label:SetFont(own.font, own.size * percent / 100, own.flags) end)
-    info.sized = percent ~= 100 or nil
+    local percent = HH.db.enabled and HH.db.labelSize or 100
+    local font, size, flags = own.font, own.size, own.flags
+    local like, factor = Match(info)
+    if like then
+        font, size, flags = like.own.font, like.own.size * factor, like.own.flags
+    end
+    size = size * percent / 100
+    local changed = like ~= nil or percent ~= 100
+    if not changed and not info.sized then
+        return
+    end
+    -- The same font again is not written again: this runs on every refresh.
+    local wrote = info.wrote
+    if not (wrote and wrote[1] == font and wrote[2] == size and wrote[3] == flags) then
+        Write(function() label:SetFont(font, size, flags) end)
+    end
+    info.wrote = changed and {font, size, flags} or nil
+    info.sized = changed or nil
 end
 
 local function ApplyAlpha(label, info)
@@ -242,6 +298,22 @@ local function PutOwnPoints(label, info, dx, dy)
     end
 end
 
+-- Another label's base anchors, on this label's button: an anchor on that
+-- label's button (or on no frame, its parent) moves to this one; its
+-- offsets, and this addon's, in this button's units.
+local function PutPointsLike(label, info, like, factor, dx, dy)
+    label:ClearAllPoints()
+    for _, point in ipairs(like.own.points) do
+        local onButton = point[2] == nil or point[2] == like.button
+        local x, y = point[4], point[5]
+        label:SetPoint(point[1], onButton and info.button or point[2], point[3] or point[1],
+            ((Number(x) and x or 0) + dx) * factor, ((Number(y) and y or 0) + dy) * factor)
+    end
+    if info.own.justify and like.own.justify then
+        label:SetJustifyH(like.own.justify)
+    end
+end
+
 -- The label's anchors, justification and box. Out of combat only.
 local function ApplyPlace(label, info)
     local own = info.own
@@ -257,7 +329,12 @@ local function ApplyPlace(label, info)
     local spec = on and PlaceSpec() or nil
     local percent = on and HH.db.labelSize or 100
     local dx, dy = on and HH.db.labelX or 0, on and HH.db.labelY or 0
-    if not spec and percent == 100 and dx == 0 and dy == 0 then
+    local like, factor = Match(info)
+    if like and not like.own.points then
+        like = nil
+    end
+    factor = like and factor or 1
+    if not spec and percent == 100 and dx == 0 and dy == 0 and not like then
         if info.placed then
             Write(function()
                 PutOwnPoints(label, info)
@@ -274,21 +351,28 @@ local function ApplyPlace(label, info)
     Write(function()
         if spec then
             label:ClearAllPoints()
-            label:SetPoint(spec.point, button, spec.point, spec.x + dx, spec.y + dy)
+            label:SetPoint(spec.point, button, spec.point, (spec.x + dx) * factor, (spec.y + dy) * factor)
             if own.justify then
                 label:SetJustifyH(spec.justify)
             end
+        elseif like then
+            -- An action bar label's place, on this button.
+            PutPointsLike(label, info, like, factor, dx, dy)
         else
             -- The game's own place, moved by the offsets.
             PutOwnPoints(label, info, dx, dy)
         end
         -- Room for a bigger or longer text: the button's width, and the base
-        -- height grown with the font.
+        -- height grown with the font. A matched label has the other's box.
         if own.width and own.height then
+            local baseWidth, baseHeight = own.width, own.height
+            if like and like.own.width and like.own.height then
+                baseWidth, baseHeight = like.own.width * factor, like.own.height * factor
+            end
             local width = type(button.GetWidth) == "function" and button:GetWidth()
-            label:SetWidth(math.max(own.width, Number(width) and width or 0))
-            if own.height > 0 then
-                label:SetHeight(own.height * math.max(1, percent / 100))
+            label:SetWidth(math.max(baseWidth, Number(width) and width or 0))
+            if baseHeight > 0 then
+                label:SetHeight(baseHeight * math.max(1, percent / 100))
             end
         end
     end)
@@ -305,6 +389,16 @@ local function PlaceAll()
         return
     end
     pendingPlace = false
+    -- A label that someone else anchored since: what it has now is its
+    -- base. Read ahead of the loop, as a matched label uses another's base.
+    for label, info in pairs(labels) do
+        if info.dirty and info.own.points then
+            local ok, points = pcall(ReadPoints, label)
+            if ok then
+                info.dirty, info.own.points = nil, points
+            end
+        end
+    end
     local count, reason = 0, nil
     for label, info in pairs(labels) do
         local ok, failure = pcall(ApplyPlace, label, info)
@@ -360,14 +454,16 @@ local function Track(entry)
     if labels[label] then
         return
     end
-    local info = {command = entry.command, name = entry.name, button = button, own = ReadOwn(label)}
+    local info = {command = entry.command, name = entry.name, button = button, small = entry.small,
+        own = ReadOwn(label)}
     labels[label] = info
+    byName[entry.name] = label
     Hook(label, "SetText", function(self) Shorten(self) end)
     -- Someone else's look for this label is its new base.
     Hook(label, "SetFont", function(self, known, font, size, flags)
         if known.own.font and type(font) == "string" and Number(size) and size > 0 then
             known.own.font, known.own.size, known.own.flags = font, size, flags
-            known.sized = nil
+            known.sized, known.wrote = nil, nil
             ApplyFont(self, known)
         end
     end)
@@ -452,8 +548,25 @@ function HH.InitializeLabels()
     ready = true
     HH.RefreshLabels()
     local frame = CreateFrame("Frame")
-    for _, event in ipairs({"UPDATE_BINDINGS", "PLAYER_ENTERING_WORLD", "PLAYER_REGEN_ENABLED"}) do
+    -- The last four: a bar's size can change (Edit Mode, the UI scale), and
+    -- the game redraws the pet bar's buttons.
+    for _, event in ipairs({"UPDATE_BINDINGS", "PLAYER_ENTERING_WORLD", "PLAYER_REGEN_ENABLED",
+            "EDIT_MODE_LAYOUTS_UPDATED", "UI_SCALE_CHANGED", "DISPLAY_SIZE_CHANGED", "PET_BAR_UPDATE"}) do
         pcall(frame.RegisterEvent, frame, event)
+    end
+    -- After the game's own handlers for an event have written theirs; several
+    -- events in one frame make one refresh.
+    local queued = false
+    local function Later()
+        if type(C_Timer) ~= "table" or type(C_Timer.After) ~= "function" then
+            HH.RefreshLabels()
+        elseif not queued then
+            queued = true
+            C_Timer.After(0, function()
+                queued = false
+                HH.RefreshLabels()
+            end)
+        end
     end
     frame:SetScript("OnEvent", function(_, event)
         if event == "PLAYER_REGEN_ENABLED" then
@@ -463,11 +576,11 @@ function HH.InitializeLabels()
             end
             return
         end
-        -- After the game's own handlers for this event have written theirs.
-        if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
-            C_Timer.After(0, HH.RefreshLabels)
-        else
-            HH.RefreshLabels()
-        end
+        Later()
     end)
+    -- Leaving Edit Mode: a bar's Icon Size may have changed.
+    local manager = rawget(_G, "EditModeManagerFrame")
+    if type(manager) == "table" and type(manager.HookScript) == "function" then
+        manager:HookScript("OnHide", Later)
+    end
 end

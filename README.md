@@ -16,6 +16,7 @@ It shows which action bar you are on. Hold Shift, Ctrl or Alt and the bar bound 
 - Soft glow or thin line in any color. The other bars fade as much as you set.
 - Highlight around the whole bar or only around the visible buttons.
 - Short key labels such as `S1` and `AC1`. Move, resize and fade them.
+- Pet bar and stance bar key labels in the same size and place as on the action bars.
 - Bars without key bindings are left alone. Modifiers no bar uses do nothing.
 - Edit Mode shows the bars unchanged.
 - Visual only.
@@ -43,6 +44,7 @@ Options, AddOns, Hotbar Highlight, or `/hh`.
 | Key label place | the game's own | A corner, a side or the center of the button. |
 | Key label left/right and down/up | 0 | Offset in pixels. |
 | Key label size and opacity | 100% | Relative to the game's own. |
+| Pet and stance bar labels like the other bars' | on | Same size and place as the action bars' labels. Off leaves them as the game draws them. |
 | One choice per bar | auto | Auto, a fixed modifier, or leave the bar alone. |
 
 ## Commands

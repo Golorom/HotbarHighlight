@@ -178,6 +178,7 @@ function HH.Sanitize(saved)
         labelY = Whole(saved.labelY, HH.LABEL_OFFSET_MIN, HH.LABEL_OFFSET_MAX, 0),
         labelSize = Whole(saved.labelSize, HH.LABEL_SIZE_MIN, HH.LABEL_SIZE_MAX, 100),
         labelOpacity = Whole(saved.labelOpacity, HH.LABEL_OPACITY_MIN, HH.LABEL_OPACITY_MAX, 100),
+        labelMatch = saved.labelMatch ~= false,
         layers = {},
     }
     local layers = type(saved.layers) == "table" and saved.layers or {}

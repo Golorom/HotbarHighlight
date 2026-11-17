@@ -27,6 +27,7 @@ Made for the default UI. A custom UI or an action bar addon may not work.
 - Soft glow or thin line in any color. The other bars fade as much as you set.
 - Highlight around the whole bar or only around the visible buttons.
 - Short key labels such as S1 and AC1. Move, resize and fade them.
+- Pet bar and stance bar key labels in the same size and place as on the action bars.
 - Bars without key bindings are left alone. Modifiers no bar uses do nothing.
 - Visual only.
 - Covers Action Bars 1 to 8, the pet bar and the stance bar.

@@ -39,10 +39,12 @@ HH.BARS = {
         command = "MULTIACTIONBAR6BUTTON%d", count = 12},
     {key = "bar8", label = "Action Bar 8", frames = {"MultiBar7"}, button = "MultiBar7Button%d",
         command = "MULTIACTIONBAR7BUTTON%d", count = 12},
+    -- small: its buttons are of another template than the action bars'
+    -- (Labels.lua can give their key labels the action bars' look).
     {key = "pet", label = "Pet Bar", frames = {"PetActionBar", "PetActionBarFrame"}, button = "PetActionButton%d",
-        command = "BONUSACTIONBUTTON%d", count = 10},
+        command = "BONUSACTIONBUTTON%d", count = 10, small = true},
     {key = "stance", label = "Stance Bar", frames = {"StanceBar", "StanceBarFrame"}, button = "StanceButton%d",
-        command = "SHAPESHIFTBUTTON%d", count = 10},
+        command = "SHAPESHIFTBUTTON%d", count = 10, small = true},
 }
 
 local BORDER_PADDING = 3
@@ -72,7 +74,8 @@ local function Buttons(def)
         local name = def.button:format(index)
         local button = _G[name]
         if type(button) == "table" then
-            found[#found + 1] = {index = index, name = name, button = button, command = def.command:format(index)}
+            found[#found + 1] = {index = index, name = name, button = button, command = def.command:format(index),
+                small = def.small}
         end
     end
     return found

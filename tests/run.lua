@@ -700,6 +700,7 @@ test("saved settings are repaired: only known keys and valid values survive", fu
     equal(db.labelX, 0)
     equal(db.labelSize, 100)
     equal(db.labelOpacity, 100)
+    equal(db.labelMatch, true)
     equal(db.extra, nil)
     equal(db.layers.bar1, "SHIFT")
     equal(db.layers.bar2, nil)
@@ -710,9 +711,10 @@ test("saved settings are repaired: only known keys and valid values survive", fu
     equal(fresh.hh.db.enabled, true)
     equal(fresh.hh.db.dim, 40)
     -- 0.1.0 saved a preset's name.
-    local older = fixture({db = {color = "green", style = "line"}})
+    local older = fixture({db = {color = "green", style = "line", labelMatch = false}})
     equal(older.hh.db.color, "ff4dff73")
     equal(older.hh.db.style, "line")
+    equal(older.hh.db.labelMatch, false)
 end)
 
 test("the settings page lists every setting and a choice per bar", function()
@@ -723,6 +725,7 @@ test("the settings page lists every setting and a choice per bar", function()
         "HOTBARHIGHLIGHT_STYLE", "HOTBARHIGHLIGHT_COLOR", "HOTBARHIGHLIGHT_OPACITY", "HOTBARHIGHLIGHT_GLOW",
         "HOTBARHIGHLIGHT_INNER", "HOTBARHIGHLIGHT_AREA", "HOTBARHIGHLIGHT_LABEL_PLACE", "HOTBARHIGHLIGHT_LABEL_X",
         "HOTBARHIGHLIGHT_LABEL_Y", "HOTBARHIGHLIGHT_LABEL_SIZE", "HOTBARHIGHLIGHT_LABEL_OPACITY",
+        "HOTBARHIGHLIGHT_LABEL_MATCH",
         "HOTBARHIGHLIGHT_THICKNESS", "HOTBARHIGHLIGHT_IDLE", "HOTBARHIGHLIGHT_COMBAT",
         "HOTBARHIGHLIGHT_LABELS", "HOTBARHIGHLIGHT_LAYER_BAR1", "HOTBARHIGHLIGHT_LAYER_BAR8",
         "HOTBARHIGHLIGHT_LAYER_PET", "HOTBARHIGHLIGHT_LAYER_STANCE"}) do
@@ -765,7 +768,8 @@ test("/hh opens the settings, out of combat; status, on and off; anything else e
     contains(state.messages[3], "Action Bar 2 (MultiBarBottomLeft): Shift (from its keys)")
     contains(state.messages[6], "Action Bar 5 (MultiBarLeft): no keys, left alone; 0 of 12")
     contains(state.messages[10], "Pet Bar (PetActionBar): Alt+Ctrl (from its keys); 10 of 10")
-    contains(state.messages[12], "Key labels: 116 found, 46 shortened, 0 with a changed look.")
+    contains(state.messages[12], "Key labels: 116 found, 46 shortened, 20 with a changed look.")
+    contains(state.messages[12], "pet and stance bar like the others on.")
     state.slash("off")
     equal(state.hh.db.enabled, false)
     equal(state.notified, "HOTBARHIGHLIGHT_ENABLED")
@@ -881,7 +885,7 @@ test("label look: the offsets alone move a label from where the game puts it", f
     equal(label.points[1][4], -25)
     state.clear()
     state.slash("status")
-    contains(state.messages[12], "116 with a changed look. Place game, offsets -20, -10, size 100%, opacity 100%.")
+    contains(state.messages[12], "116 with a changed look. Place game, offsets -20, -10, size 100%, opacity 100%,")
 end)
 
 test("label look: a label that refuses to move does not stop the others, and the reason is reported", function()
@@ -949,12 +953,12 @@ test("label look: anchors wait for combat to end; the font and opacity do not", 
 end)
 
 test("label look: another addon's size and place for a label become its base, with these settings on top", function()
-    local state = fixture()
+    local state = fixture({db = {labelMatch = false}})
     local label = state.label("PetActionButton1")
     local button = state.env.PetActionButton1
     state.settings.HOTBARHIGHLIGHT_LABEL_SIZE.set(150)
     equal(label.font[2], 15)
-    -- Another addon makes the pet bar's labels smaller, as Grimoire does.
+    -- Another addon makes the pet bar's labels smaller.
     label:SetFont("Fonts\\ARIALN.TTF", 6, "OUTLINE")
     equal(label.font[2], 9, "150% of the other addon's 6")
     -- And moves them, in the usual two calls.
@@ -973,6 +977,135 @@ test("label look: another addon's size and place for a label become its base, wi
     state.settings.HOTBARHIGHLIGHT_LABEL_SIZE.set(100)
     equal(label.points[1][1], "TOP")
     equal(label.font[2], 6)
+end)
+
+-- Pet and stance bar labels like the other bars' ---------------------------------------
+
+-- The pet and stance bars as the game draws them: buttons of another template,
+-- the key label bigger and in the top left corner, the bars set to a larger
+-- Icon Size in Edit Mode (their buttons drawn at 150%).
+local function smallBars(env)
+    for _, pattern in ipairs({"PetActionButton%d", "StanceButton%d"}) do
+        for index = 1, 10 do
+            local button = env[pattern:format(index)]
+            button.scale = 1.5
+            button.width = 30
+            local label = button.HotKey
+            label.font = {"Fonts\\FRIZQT__.TTF", 12, ""}
+            label.points = {{"TOPLEFT", button, "TOPLEFT", 1, -2}}
+            label.justify, label.width, label.height = "LEFT", 30, 12
+        end
+    end
+end
+
+test("pet and stance bar labels take the action bars' font, size on screen and place", function()
+    local state = fixture({beforeLoad = smallBars})
+    for _, name in ipairs({"PetActionButton1", "PetActionButton10", "StanceButton1", "StanceButton10"}) do
+        local label, button = state.label(name), state.env[name]
+        equal(label.font[1], "Fonts\\ARIALN.TTF", name .. ": the action bars' font")
+        near(label.font[2], 10 / 1.5, name .. ": 10 on screen, on a button drawn at 150%")
+        equal(label.font[3], "OUTLINE")
+        equal(#label.points, 1)
+        equal(label.points[1][1], "TOPRIGHT", name .. ": the action bars' corner")
+        equal(label.points[1][2], button, name .. ": on its own button")
+        near(label.points[1][4], -5 / 1.5, name .. ": the same distance from the corner on screen")
+        near(label.points[1][5], -5 / 1.5)
+        equal(label.justify, "RIGHT")
+        near(label.height, 10 / 1.5)
+        equal(label.width, 30, "room for the text: the button's width")
+    end
+    equal(state.text("PetActionButton1"), "AC1", "the text as on every bar")
+    -- An action bar's label is not touched.
+    local plain = state.label("ActionButton1")
+    equal(plain.fontWrites, 0)
+    equal(plain.pointWrites, 0)
+end)
+
+test("pet and stance bar labels: the setting off puts the game's look back; on by default", function()
+    local state = fixture({beforeLoad = smallBars})
+    local label, button = state.label("PetActionButton2"), state.env.PetActionButton2
+    equal(state.hh.db.labelMatch, true)
+    state.settings.HOTBARHIGHLIGHT_LABEL_MATCH.set(false)
+    equal(label.font[1], "Fonts\\FRIZQT__.TTF")
+    equal(label.font[2], 12)
+    equal(label.points[1][1], "TOPLEFT")
+    equal(label.points[1][2], button)
+    equal(label.points[1][4], 1)
+    equal(label.points[1][5], -2)
+    equal(label.justify, "LEFT")
+    equal(label.width, 30)
+    equal(label.height, 12)
+    state.settings.HOTBARHIGHLIGHT_LABEL_MATCH.set(true)
+    near(label.font[2], 10 / 1.5)
+    equal(label.points[1][1], "TOPRIGHT")
+    -- The whole addon off: as the game draws them.
+    state.slash("off")
+    equal(label.font[2], 12)
+    equal(label.points[1][1], "TOPLEFT")
+end)
+
+test("pet and stance bar labels: the other label settings go on top, in the same size on screen", function()
+    local state = fixture({beforeLoad = smallBars})
+    local label, button = state.label("StanceButton3"), state.env.StanceButton3
+    state.settings.HOTBARHIGHLIGHT_LABEL_SIZE.set(150)
+    near(label.font[2], 15 / 1.5)
+    equal(state.label("ActionButton1").font[2], 15)
+    state.settings.HOTBARHIGHLIGHT_LABEL_X.set(3)
+    near(label.points[1][4], (-5 + 3) / 1.5, "the offset in the action bars' units")
+    equal(state.label("ActionButton1").points[1][4], -2)
+    state.settings.HOTBARHIGHLIGHT_LABEL_PLACE.set("bottomleft")
+    equal(label.points[1][1], "BOTTOMLEFT")
+    equal(label.points[1][2], button)
+    near(label.points[1][4], (2 + 3) / 1.5)
+    equal(label.justify, "LEFT")
+end)
+
+test("pet and stance bar labels follow a new Icon Size, and another addon's look for the action bars", function()
+    local state = fixture({beforeLoad = smallBars})
+    local label = state.label("PetActionButton4")
+    -- Edit Mode: the pet bar set smaller.
+    for index = 1, 10 do
+        state.env["PetActionButton" .. index].scale = 0.8
+    end
+    state.emit("EDIT_MODE_LAYOUTS_UPDATED")
+    state.runTimers()
+    near(label.font[2], 10 / 0.8)
+    near(label.points[1][4], -5 / 0.8)
+    -- The same font is not written again on the next refresh.
+    local writes = label.fontWrites
+    state.emit("PET_BAR_UPDATE")
+    state.emit("PET_BAR_UPDATE")
+    state.runTimers()
+    equal(label.fontWrites, writes)
+    -- Another addon gives the action bars' labels a bigger font and another corner.
+    local reference = state.label("ActionButton1")
+    reference:SetFont("Fonts\\ARIALN.TTF", 14, "OUTLINE")
+    reference:ClearAllPoints()
+    reference:SetPoint("BOTTOMRIGHT", state.env.ActionButton1, "BOTTOMRIGHT", -2, 2)
+    state.runTimers()
+    state.emit("UPDATE_BINDINGS")
+    state.runTimers()
+    near(label.font[2], 14 / 0.8)
+    equal(label.points[1][1], "BOTTOMRIGHT")
+    equal(label.points[1][2], state.env.PetActionButton4)
+    near(label.points[1][4], -2 / 0.8)
+end)
+
+test("pet and stance bar labels: the place waits for combat to end; a client without the action bars keeps the game's look", function()
+    local state = fixture({beforeLoad = smallBars, db = {labelMatch = false}})
+    local label = state.label("PetActionButton5")
+    state.combat = true
+    state.settings.HOTBARHIGHLIGHT_LABEL_MATCH.set(true)
+    near(label.font[2], 10 / 1.5, "the font at once")
+    equal(label.points[1][1], "TOPLEFT", "not in combat")
+    state.combat = false
+    state.emit("PLAYER_REGEN_ENABLED")
+    equal(label.points[1][1], "TOPRIGHT")
+    local alone = fixture({beforeLoad = smallBars,
+        without = {"MainActionBar", "MultiBarBottomLeft", "MultiBarBottomRight"}})
+    local kept = alone.label("PetActionButton5")
+    equal(kept.font[2], 12)
+    equal(kept.points[1][1], "TOPLEFT")
 end)
 
 -- The highlight's area --------------------------------------------------------------
