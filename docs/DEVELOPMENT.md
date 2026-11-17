@@ -40,6 +40,7 @@ Add a test with each change. When the game is found to behave differently from t
 ```
 HotbarHighlight.toc   file list and metadata
 Core.lua  Bars.lua  Labels.lua  Options.lua
+Textures/             the glow's eight pieces (a new or renamed file needs a game restart)
 tests/run.lua         stand-in and tests
 docs/                 this file and HOW-IT-WORKS.md
 .github/workflows/    tests on every push, release on a version tag

@@ -1,8 +1,8 @@
 local ADDON, HH = ...
 
 -- Hotbar Highlight: shows which action bar the modifier keys you hold belong
--- to. The bar bound to the held modifier gets a border; the other bound bars
--- fade. Key labels on the buttons can be shortened ("S1" for Shift-1).
+-- to. The bar bound to the held modifier gets a soft glow (or a thin line)
+-- around it; the other bound bars fade. Key labels on the buttons can be shortened ("S1" for Shift-1).
 --
 -- It only changes how things look: a bar's opacity, its own border frames,
 -- and the text of the buttons' key labels. It binds nothing, casts nothing,
@@ -46,13 +46,23 @@ for _, layer in ipairs(HH.LAYERS) do
     HH.LAYER_CHOICES[#HH.LAYER_CHOICES + 1] = layer
 end
 
+-- The highlight's color is saved as "aarrggbb", the form the game's color
+-- swatch setting uses. The presets are for a client without the swatch, and
+-- they are what 0.1.0 saved (a preset's key), which is still understood.
+HH.DEFAULT_COLOR = "ffffd100"
 HH.COLORS = {
-    {key = "gold", label = "Gold", color = {1, 0.82, 0}},
-    {key = "white", label = "White", color = {1, 1, 1}},
-    {key = "green", label = "Green", color = {0.3, 1, 0.45}},
-    {key = "blue", label = "Blue", color = {0.35, 0.7, 1}},
-    {key = "purple", label = "Purple", color = {0.75, 0.5, 1}},
-    {key = "red", label = "Red", color = {1, 0.35, 0.3}},
+    {key = "ffffd100", label = "Gold", old = "gold"},
+    {key = "ffffffff", label = "White", old = "white"},
+    {key = "ff4dff73", label = "Green", old = "green"},
+    {key = "ff59b3ff", label = "Blue", old = "blue"},
+    {key = "ffbf80ff", label = "Purple", old = "purple"},
+    {key = "ffff594d", label = "Red", old = "red"},
+}
+
+-- glow: a soft light around the bar that fades outward. line: a thin frame.
+HH.STYLES = {
+    {key = "glow", label = "Soft glow"},
+    {key = "line", label = "Thin line"},
 }
 
 HH.IDLE = {
@@ -68,6 +78,8 @@ HH.LABEL_STYLES = {
 
 HH.DIM_MIN, HH.DIM_MAX, HH.DEFAULT_DIM = 10, 100, 40
 HH.THICKNESS_MIN, HH.THICKNESS_MAX, HH.DEFAULT_THICKNESS = 1, 6, 2
+HH.GLOW_MIN, HH.GLOW_MAX, HH.DEFAULT_GLOW = 6, 48, 18
+HH.OPACITY_MIN, HH.OPACITY_MAX, HH.DEFAULT_OPACITY = 20, 100, 90
 
 function HH.IsSecret(value)
     return type(issecretvalue) == "function" and issecretvalue(value) == true
@@ -98,6 +110,23 @@ local function Whole(value, low, high, default)
 end
 HH.Whole = Whole
 
+-- "aarrggbb", lower case; a 0.1.0 preset key becomes its color; anything
+-- else the default.
+function HH.SanitizeColor(value)
+    if type(value) == "string" then
+        local hex = value:lower()
+        if hex:match("^%x%x%x%x%x%x%x%x$") then
+            return hex
+        end
+        for _, preset in ipairs(HH.COLORS) do
+            if preset.old == hex then
+                return preset.key
+            end
+        end
+    end
+    return HH.DEFAULT_COLOR
+end
+
 -- The saved settings, rebuilt: only known keys with valid values survive.
 function HH.Sanitize(saved)
     saved = type(saved) == "table" and saved or {}
@@ -105,7 +134,10 @@ function HH.Sanitize(saved)
         enabled = saved.enabled ~= false,
         dim = Whole(saved.dim, HH.DIM_MIN, HH.DIM_MAX, HH.DEFAULT_DIM),
         border = saved.border ~= false,
-        color = Choice(saved.color, HH.COLORS, "gold"),
+        style = Choice(saved.style, HH.STYLES, "glow"),
+        color = HH.SanitizeColor(saved.color),
+        opacity = Whole(saved.opacity, HH.OPACITY_MIN, HH.OPACITY_MAX, HH.DEFAULT_OPACITY),
+        glow = Whole(saved.glow, HH.GLOW_MIN, HH.GLOW_MAX, HH.DEFAULT_GLOW),
         thickness = Whole(saved.thickness, HH.THICKNESS_MIN, HH.THICKNESS_MAX, HH.DEFAULT_THICKNESS),
         idle = Choice(saved.idle, HH.IDLE, "all"),
         combatOnly = saved.combatOnly == true,
@@ -155,13 +187,11 @@ function HH.LayerLabel(layer)
     return layer and (layer:gsub("%-", "+")) or "none"
 end
 
+-- The highlight's red, green, blue (0-1) and its opacity (0-1).
 function HH.Color()
-    for _, preset in ipairs(HH.COLORS) do
-        if preset.key == HH.db.color then
-            return preset.color
-        end
-    end
-    return HH.COLORS[1].color
+    local hex = HH.SanitizeColor(HH.db.color)
+    return tonumber(hex:sub(3, 4), 16) / 255, tonumber(hex:sub(5, 6), 16) / 255, tonumber(hex:sub(7, 8), 16) / 255,
+        HH.db.opacity / 100
 end
 
 -- Each part starts on its own: one that fails is reported (and handed to the

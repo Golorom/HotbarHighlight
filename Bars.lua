@@ -8,7 +8,7 @@ local _, HH = ...
 -- bar's setting can fix the layer or leave the bar out.
 --
 -- While you hold a layer's modifiers and some bar has that layer:
---   that bar      full opacity, and a border around it
+--   that bar      full opacity, and a soft glow (or a thin line) around it
 --   other layers  faded to the "other bars" opacity
 --   no layer      untouched
 -- With no modifier held nothing changes, unless "Highlight the bar with no
@@ -46,6 +46,8 @@ HH.BARS = {
 }
 
 local BORDER_PADDING = 3
+-- The glow starts at the bar's own edge.
+local GLOW_PADDING = 0
 -- How often a held modifier is checked again, in case its release was never
 -- reported (the game window lost focus while it was down).
 local RECHECK = 0.2
@@ -141,6 +143,44 @@ local function MakeBorder(entry)
     return border
 end
 
+-- The soft glow: eight pieces outside the bar's edges, four sides and four
+-- corners, each a white texture whose opacity falls off away from the bar
+-- (Textures\Glow*.tga), tinted with the color. One file per piece, so no
+-- piece depends on turning a texture around.
+--   {file, the piece's point, the frame's point it sits on, second pair for
+--    a side (it stretches along the bar), which size it takes}
+local GLOW_PIECES = {
+    {"GlowTop", "BOTTOMLEFT", "TOPLEFT", "BOTTOMRIGHT", "TOPRIGHT", "height"},
+    {"GlowBottom", "TOPLEFT", "BOTTOMLEFT", "TOPRIGHT", "BOTTOMRIGHT", "height"},
+    {"GlowLeft", "TOPRIGHT", "TOPLEFT", "BOTTOMRIGHT", "BOTTOMLEFT", "width"},
+    {"GlowRight", "TOPLEFT", "TOPRIGHT", "BOTTOMLEFT", "BOTTOMRIGHT", "width"},
+    {"GlowTopLeft", "BOTTOMRIGHT", "TOPLEFT"},
+    {"GlowTopRight", "BOTTOMLEFT", "TOPRIGHT"},
+    {"GlowBottomLeft", "TOPRIGHT", "BOTTOMLEFT"},
+    {"GlowBottomRight", "TOPLEFT", "BOTTOMRIGHT"},
+}
+
+local function MakeGlow(entry)
+    local glow = CreateFrame("Frame", nil, UIParent)
+    glow:SetFrameStrata("MEDIUM")
+    glow:SetPoint("TOPLEFT", entry.frame, "TOPLEFT", -GLOW_PADDING, GLOW_PADDING)
+    glow:SetPoint("BOTTOMRIGHT", entry.frame, "BOTTOMRIGHT", GLOW_PADDING, -GLOW_PADDING)
+    glow.pieces = {}
+    local folder = "Interface\\AddOns\\" .. HH.ADDON .. "\\Textures\\"
+    for index, piece in ipairs(GLOW_PIECES) do
+        local texture = glow:CreateTexture(nil, "ARTWORK")
+        texture:SetTexture(folder .. piece[1])
+        texture:SetPoint(piece[2], glow, piece[3], 0, 0)
+        if piece[4] then
+            texture:SetPoint(piece[4], glow, piece[5], 0, 0)
+        end
+        glow.pieces[index] = {texture = texture, size = piece[6]}
+    end
+    glow.anchor = entry.frame
+    glow:Hide()
+    return glow
+end
+
 -- Each bar's frame, buttons and layer, worked out again: at login, when key
 -- bindings change, and when a setting changes.
 function HH.Layout()
@@ -171,8 +211,10 @@ function HH.Layout()
         if frame and entry.layer and (not entry.border or entry.border.anchor ~= frame) then
             if entry.border then
                 entry.border:Hide()
+                entry.glow:Hide()
             end
             entry.border = MakeBorder(entry)
+            entry.glow = MakeGlow(entry)
         end
         if frame and not entry.hooked and type(frame.HookScript) == "function" then
             -- The border follows the bar when the game shows or hides it.
@@ -233,31 +275,53 @@ local function Fade(entry, on)
     end
 end
 
+-- The highlight around a bar: the soft glow or the thin line, in the color
+-- and opacity set.
 local function Border(entry, on)
     if on and entry.border and entry.border.anchor ~= entry.frame then
         -- The bar's frame changed (another client build's name): start over.
         entry.border:Hide()
-        entry.border = nil
+        entry.glow:Hide()
+        entry.border, entry.glow = nil, nil
     end
     if not on then
         if entry.border then
             entry.border:Hide()
+            entry.glow:Hide()
         end
         return
     end
     if not entry.border then
         entry.border = MakeBorder(entry)
+        entry.glow = MakeGlow(entry)
     end
-    local color = HH.Color()
-    for _, edge in ipairs(entry.border.edges) do
-        edge.texture:SetColorTexture(color[1], color[2], color[3], 1)
-        if edge.horizontal then
-            edge.texture:SetHeight(HH.db.thickness)
+    local r, g, b, alpha = HH.Color()
+    if HH.db.style == "line" then
+        for _, edge in ipairs(entry.border.edges) do
+            edge.texture:SetColorTexture(r, g, b, alpha)
+            if edge.horizontal then
+                edge.texture:SetHeight(HH.db.thickness)
+            else
+                edge.texture:SetWidth(HH.db.thickness)
+            end
+        end
+        entry.glow:Hide()
+        entry.border:Show()
+        return
+    end
+    local size = HH.db.glow
+    for _, piece in ipairs(entry.glow.pieces) do
+        piece.texture:SetVertexColor(r, g, b, alpha)
+        if piece.size == "height" then
+            piece.texture:SetHeight(size)
+        elseif piece.size == "width" then
+            piece.texture:SetWidth(size)
         else
-            edge.texture:SetWidth(HH.db.thickness)
+            piece.texture:SetSize(size, size)
         end
     end
-    entry.border:Show()
+    entry.border:Hide()
+    entry.glow:Show()
 end
 
 local function Visible(frame)
@@ -348,9 +412,9 @@ end
 
 -- /hh status: what was found and what each bar's layer is.
 function HH.StatusLines()
-    local lines = {string.format("enabled=%s held=%s active=%s other bars at %d%%, border=%s, labels=%s",
+    local lines = {string.format("enabled=%s held=%s active=%s other bars at %d%%, highlight=%s, labels=%s",
         tostring(HH.db.enabled), HH.LayerLabel(state.held), tostring(state.active), HH.db.dim,
-        tostring(HH.db.border), HH.db.labels)}
+        HH.db.border and (HH.db.style .. " " .. HH.db.color) or "off", HH.db.labels)}
     for _, def in ipairs(HH.BARS) do
         local entry = state.bars[def.key]
         if not entry or not entry.frame then

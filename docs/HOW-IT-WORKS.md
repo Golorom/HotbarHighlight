@@ -25,7 +25,7 @@ A layer is the modifier part of a key binding in the game's own order: `NONE`, `
 
 `HH.Apply()` runs on `MODIFIER_STATE_CHANGED`, on entering and leaving combat, when a bar or Edit Mode is shown or hidden, and after `Layout`. It is active when the addon is on, Edit Mode is closed, the combat-only setting allows it, and some bar has the held layer. Then:
 
-- the bar of the held layer: its own opacity, border shown;
+- the bar of the held layer: its own opacity, and the highlight around it;
 - bars of other layers: `SetAlpha(dim / 100)`; the opacity each had before is remembered and put back when the fade ends;
 - bars with no layer: untouched.
 
@@ -34,12 +34,13 @@ While a modifier is held, an `OnUpdate` check runs five times a second and re-ap
 ## What it relies on in the game
 
 - `SetAlpha` on the game's bar frames is not a protected call, so it is allowed in combat.
-- The border frames are children of `UIParent`, anchored to the bar. They are not children of the bar, so the bar's own layout code never meets them. They are made in `Layout`, normally outside combat.
+- The highlight frames are children of `UIParent`, anchored to the bar. They are not children of the bar, so the bar's own layout code never meets them. They are made in `Layout`, normally outside combat.
+- The soft glow is eight textures outside the bar's edges: four sides and four corners (`Textures\Glow*.tga`, 32 x 32, white, with opacity falling off as the square of the distance from the bar). Each piece has its own file, so none depends on turning a texture around. `SetVertexColor` gives the color and opacity; the glow size sets each side's depth and each corner's width and height. The thin line is four solid textures on a second frame; only one of the two frames shows.
 - `HookScript` on a bar's `OnShow` and `OnHide`, and on `EditModeManagerFrame`, to follow visibility.
 - The key label is each button's `HotKey` font string. Its `SetText` is hooked with `hooksecurefunc`, so the game's write runs first and unchanged; the hook then writes the short text. A flag stops the hook from answering its own write. Only text is written: font, color, size and anchors are the game's.
 - A button with no key keeps the game's text, which is its range dot.
 
-None of this was confirmed line by line against the Forever client's interface source. `/hh status` reports what was found, which is the first thing to check when something does not show.
+None of this was confirmed line by line against the Forever client's interface source, but 0.1.0 ran in that client: the five standard bars and the pet bar were found, faded and labelled as intended. `/hh status` reports what was found, which is the first thing to check when something does not show.
 
 ## Secret values
 

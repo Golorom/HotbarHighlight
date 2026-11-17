@@ -16,6 +16,11 @@ local function equal(actual, expected, context)
         error((context or "value") .. ": expected " .. tostring(expected) .. ", got " .. tostring(actual), 2)
     end
 end
+local function near(actual, expected, context)
+    if type(actual) ~= "number" or math.abs(actual - expected) > 0.005 then
+        error((context or "value") .. ": expected about " .. tostring(expected) .. ", got " .. tostring(actual), 2)
+    end
+end
 local function contains(actual, fragment, context)
     if type(actual) ~= "string" or not actual:find(fragment, 1, true) then
         error((context or "text") .. ": expected text containing " .. fragment .. ", got " .. tostring(actual), 2)
@@ -54,8 +59,8 @@ local BAR_FRAMES = {
 }
 
 -- options: bindings, db (saved settings), mainName (the main bar's frame
--- name), without (frame names this client lacks), noSettings, breakLabels,
--- secretKeys.
+-- name), without (frame names this client lacks), noSettings, noSwatch,
+-- breakLabels, secretKeys.
 local function fixture(options)
     options = options or {}
     local state = {frames = {}, messages = {}, mods = {}, combat = false, focus = nil, timers = {},
@@ -95,8 +100,11 @@ local function fixture(options)
             local texture = {points = {}}
             function texture:SetPoint(...) self.points[#self.points + 1] = {...} end
             function texture:SetColorTexture(r, g, b, a) self.color = {r, g, b, a} end
+            function texture:SetTexture(path) self.path = path end
+            function texture:SetVertexColor(r, g, b, a) self.tint = {r, g, b, a} end
             function texture:SetHeight(height) self.height = height end
             function texture:SetWidth(width) self.width = width end
+            function texture:SetSize(width, height) self.width, self.height = width, height end
             self.textures[#self.textures + 1] = texture
             return texture
         end
@@ -186,10 +194,14 @@ local function fixture(options)
             CreateDropdown = function(_, setting, choices, tooltip)
                 state.initializers[setting.variable] = {setting = setting, choices = choices, tooltip = tooltip}
             end,
+            CreateColorSwatch = function(_, setting, tooltip)
+                state.initializers[setting.variable] = {setting = setting, tooltip = tooltip, swatch = true}
+            end,
             OpenToCategory = function(id) state.opened = id end,
             NotifyUpdate = function(variable) state.notified = variable end,
         }
         env.CreateSettingsListSectionHeaderInitializer = function(name) return {heading = name} end
+        if options.noSwatch then env.Settings.CreateColorSwatch = nil end
     end
 
     -- The game's bars and buttons, each with a key label.
@@ -240,16 +252,24 @@ local function fixture(options)
     end
     function state.clear() state.messages = {} end
     function state.alpha(name) return env[name].alpha end
-    function state.borderOf(name)
-        local entry
+    local function entryOf(name)
         for _, bar in pairs(state.hh.state.bars) do
-            if bar.frameName == name then entry = bar end
+            if bar.frameName == name then return bar end
         end
+    end
+    -- The thin line's frame and the soft glow's frame.
+    function state.borderOf(name)
+        local entry = entryOf(name)
         return entry and entry.border
     end
+    function state.glowOf(name)
+        local entry = entryOf(name)
+        return entry and entry.glow
+    end
+    -- Highlighted, by either look.
     function state.bordered(name)
-        local border = state.borderOf(name)
-        return border ~= nil and border.shown == true
+        local border, glow = state.borderOf(name), state.glowOf(name)
+        return (border ~= nil and border.shown == true) or (glow ~= nil and glow.shown == true)
     end
     function state.text(button) return state.labels[button].label.text end
 
@@ -367,12 +387,21 @@ test("holding Shift highlights the Shift bar and fades the other bound bars; let
     equal(state.alpha("MultiBarLeft"), 0.6, "no keys: left alone")
     equal(state.alpha("StanceBar"), 1, "no keys: left alone")
     equal(state.bordered("MainActionBar"), false)
-    local border = state.borderOf("MultiBarBottomLeft")
-    equal(border.parent, state.env.UIParent, "not a child of the game's bar")
-    equal(border.points[1][2], state.env.MultiBarBottomLeft, "anchored around the bar")
-    equal(border.textures[1].color[1], 1, "gold")
-    equal(border.textures[1].height, 2)
-    equal(border.textures[3].width, 2)
+    local glow = state.glowOf("MultiBarBottomLeft")
+    equal(glow.shown, true, "the soft glow by default")
+    equal(state.borderOf("MultiBarBottomLeft").shown, false, "not the line")
+    equal(glow.parent, state.env.UIParent, "not a child of the game's bar")
+    equal(glow.points[1][2], state.env.MultiBarBottomLeft, "anchored around the bar")
+    equal(#glow.textures, 8, "four sides and four corners")
+    equal(glow.textures[1].path, "Interface\\AddOns\\HotbarHighlight\\Textures\\GlowTop")
+    equal(glow.textures[1].height, 18, "a side reaches 18 px out")
+    equal(glow.textures[3].width, 18)
+    equal(glow.textures[5].width, 18, "a corner is square")
+    equal(glow.textures[5].height, 18)
+    near(glow.textures[1].tint[1], 1, "gold")
+    near(glow.textures[1].tint[2], 0.82)
+    near(glow.textures[1].tint[3], 0)
+    near(glow.textures[1].tint[4], 0.9, "at 90%")
     state.hold()
     equal(state.hh.state.active, false)
     equal(state.alpha("MainActionBar"), 1)
@@ -521,11 +550,35 @@ test("the fade, the border and its look follow the settings at once", function()
     equal(state.alpha("MainActionBar"), 1, "100%: no fade")
     state.settings.HOTBARHIGHLIGHT_DIM.set(5)
     equal(state.hh.db.dim, 10, "kept in range")
-    state.settings.HOTBARHIGHLIGHT_COLOR.set("green")
+    state.settings.HOTBARHIGHLIGHT_COLOR.set("FF00FF80")
+    equal(state.hh.db.color, "ff00ff80", "any color, saved in lower case")
+    state.settings.HOTBARHIGHLIGHT_OPACITY.set(50)
+    state.settings.HOTBARHIGHLIGHT_GLOW.set(30)
+    local glow = state.glowOf("MultiBarBottomLeft")
+    near(glow.textures[2].tint[1], 0)
+    near(glow.textures[2].tint[2], 1)
+    near(glow.textures[2].tint[3], 0.5)
+    near(glow.textures[2].tint[4], 0.5)
+    equal(glow.textures[2].height, 30)
+    equal(glow.textures[8].width, 30)
+    state.settings.HOTBARHIGHLIGHT_GLOW.set(500)
+    equal(state.hh.db.glow, 48, "kept in range")
+    state.settings.HOTBARHIGHLIGHT_COLOR.set("not a color")
+    equal(state.hh.db.color, "ffffd100", "nonsense: gold")
+    -- The thin line instead.
+    state.settings.HOTBARHIGHLIGHT_STYLE.set("line")
     state.settings.HOTBARHIGHLIGHT_THICKNESS.set(4)
     local border = state.borderOf("MultiBarBottomLeft")
-    equal(border.textures[1].color[2], 1, "green")
+    equal(border.shown, true)
+    equal(glow.shown, false, "one look at a time")
+    equal(border.parent, state.env.UIParent)
+    near(border.textures[1].color[1], 1)
+    near(border.textures[1].color[4], 0.5, "the line takes the opacity too")
     equal(border.textures[1].height, 4)
+    equal(border.textures[3].width, 4)
+    state.settings.HOTBARHIGHLIGHT_STYLE.set("glow")
+    equal(glow.shown, true)
+    equal(border.shown, false)
     state.settings.HOTBARHIGHLIGHT_BORDER.set(false)
     equal(state.bordered("MultiBarBottomLeft"), false)
     equal(state.alpha("MainActionBar"), 0.1, "the fade stays")
@@ -541,7 +594,10 @@ test("saved settings are repaired: only known keys and valid values survive", fu
     equal(db.enabled, true)
     equal(db.dim, 100)
     equal(db.border, true)
-    equal(db.color, "gold")
+    equal(db.color, "ffffd100")
+    equal(db.style, "glow")
+    equal(db.opacity, 90)
+    equal(db.glow, 18)
     equal(db.thickness, 2)
     equal(db.idle, "all")
     equal(db.combatOnly, false)
@@ -555,6 +611,10 @@ test("saved settings are repaired: only known keys and valid values survive", fu
     local fresh = fixture({db = "broken"})
     equal(fresh.hh.db.enabled, true)
     equal(fresh.hh.db.dim, 40)
+    -- 0.1.0 saved a preset's name.
+    local older = fixture({db = {color = "green", style = "line"}})
+    equal(older.hh.db.color, "ff4dff73")
+    equal(older.hh.db.style, "line")
 end)
 
 test("the settings page lists every setting and a choice per bar", function()
@@ -562,13 +622,23 @@ test("the settings page lists every setting and a choice per bar", function()
     equal(state.category.title, "Hotbar Highlight")
     equal(state.registered, state.category)
     for _, variable in ipairs({"HOTBARHIGHLIGHT_ENABLED", "HOTBARHIGHLIGHT_DIM", "HOTBARHIGHLIGHT_BORDER",
-        "HOTBARHIGHLIGHT_COLOR", "HOTBARHIGHLIGHT_THICKNESS", "HOTBARHIGHLIGHT_IDLE", "HOTBARHIGHLIGHT_COMBAT",
+        "HOTBARHIGHLIGHT_STYLE", "HOTBARHIGHLIGHT_COLOR", "HOTBARHIGHLIGHT_OPACITY", "HOTBARHIGHLIGHT_GLOW",
+        "HOTBARHIGHLIGHT_THICKNESS", "HOTBARHIGHLIGHT_IDLE", "HOTBARHIGHLIGHT_COMBAT",
         "HOTBARHIGHLIGHT_LABELS", "HOTBARHIGHLIGHT_LAYER_BAR1", "HOTBARHIGHLIGHT_LAYER_BAR8",
         "HOTBARHIGHLIGHT_LAYER_PET", "HOTBARHIGHLIGHT_LAYER_STANCE"}) do
         equal(state.initializers[variable] ~= nil, true, variable)
         equal(type(state.initializers[variable].tooltip), "string", variable .. " has help")
     end
     equal(state.settings.HOTBARHIGHLIGHT_DIM.get(), 40)
+    equal(state.initializers.HOTBARHIGHLIGHT_COLOR.swatch, true, "a color swatch")
+    equal(state.settings.HOTBARHIGHLIGHT_COLOR.get(), "ffffd100")
+    -- A client without the swatch gets a list of colors.
+    local plain = fixture({noSwatch = true})
+    local colors = plain.initializers.HOTBARHIGHLIGHT_COLOR.choices()
+    equal(#colors, 6)
+    equal(colors[1].label, "Gold")
+    plain.settings.HOTBARHIGHLIGHT_COLOR.set("ff59b3ff")
+    equal(plain.hh.db.color, "ff59b3ff")
     equal(state.settings.HOTBARHIGHLIGHT_LAYER_PET.get(), "auto")
     local choices = state.initializers.HOTBARHIGHLIGHT_LAYER_PET.choices()
     equal(#choices, 10)
@@ -695,6 +765,33 @@ test("source scan: nothing binds, casts, moves a bar, or sends anything", functi
             equal(text:find(name, 1, true), nil, path .. " uses " .. name)
         end
     end
+end)
+
+test("each glow piece has its texture file: 32 x 32, 32-bit, white, clear at its outer side", function()
+    local file = assert(io.open("Bars.lua"))
+    local source = file:read("*a")
+    file:close()
+    local count = 0
+    for name in source:gmatch('{"(Glow%a+)"') do
+        count = count + 1
+        local texture = assert(io.open("Textures/" .. name .. ".tga", "rb"), name .. ".tga is missing")
+        local data = texture:read("*a")
+        texture:close()
+        equal(#data, 18 + 32 * 32 * 4, name .. " size")
+        equal(data:byte(3), 2, name .. " uncompressed true color")
+        equal(data:byte(13) + data:byte(14) * 256, 32, name .. " width")
+        equal(data:byte(15) + data:byte(16) * 256, 32, name .. " height")
+        equal(data:byte(17), 32, name .. " bits")
+        equal(data:byte(19), 255, name .. " white")
+    end
+    equal(count, 8)
+    -- The top piece sits above the bar: clear on its top row, solid at the bottom.
+    local top = assert(io.open("Textures/GlowTop.tga", "rb"))
+    local data = top:read("*a")
+    top:close()
+    local function alpha(x, y) return data:byte(18 + (y * 32 + x) * 4 + 4) end
+    equal(alpha(16, 0) < 5, true, "outer row")
+    equal(alpha(16, 31) > 240, true, "inner row")
 end)
 
 test("the TOC lists every file, and the version matches the changelog", function()

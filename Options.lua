@@ -91,12 +91,31 @@ function HH.InitializeOptions()
             .. "highlighted and the other bound bars fade. Off: bars and key labels are as the game shows them.")
     Slider("HOTBARHIGHLIGHT_DIM", "Other bars' opacity", "dim", HH.DIM_MIN, HH.DIM_MAX, HH.DEFAULT_DIM, "%d%%",
         "How visible the other bars stay while one is highlighted. 100% does not fade them.")
-    Flag("HOTBARHIGHLIGHT_BORDER", "Border around the highlighted bar", "border", true,
-        "A thin frame around the bar of the modifiers you hold.")
-    Dropdown("HOTBARHIGHLIGHT_COLOR", "Border color", "gold", HH.COLORS,
-        function() return HH.db.color end, function(value) HH.db.color = value end, "The border's color.")
-    Slider("HOTBARHIGHLIGHT_THICKNESS", "Border thickness", "thickness", HH.THICKNESS_MIN, HH.THICKNESS_MAX,
-        HH.DEFAULT_THICKNESS, "%d px", "The border's thickness, in pixels.")
+    Flag("HOTBARHIGHLIGHT_BORDER", "Highlight around the bar", "border", true,
+        "A glow or a line around the bar of the modifiers you hold. Off: that bar only stays bright while the "
+            .. "others fade.")
+    Dropdown("HOTBARHIGHLIGHT_STYLE", "Highlight style", "glow", HH.STYLES,
+        function() return HH.db.style end, function(value) HH.db.style = value end,
+        "Soft glow: a light around the bar that fades outward. Thin line: a plain frame.")
+    if type(Settings.CreateColorSwatch) == "function" then
+        local color = Proxy("HOTBARHIGHLIGHT_COLOR", Settings.VarType.String, "Highlight color", HH.DEFAULT_COLOR,
+            function() return HH.db.color end,
+            function(value)
+                HH.db.color = HH.SanitizeColor(value)
+                HH.Refresh()
+            end)
+        Settings.CreateColorSwatch(category, color, "The color of the glow or line. Click to pick any color.")
+    else
+        Dropdown("HOTBARHIGHLIGHT_COLOR", "Highlight color", HH.DEFAULT_COLOR, HH.COLORS,
+            function() return HH.db.color end, function(value) HH.db.color = value end,
+            "The color of the glow or line.")
+    end
+    Slider("HOTBARHIGHLIGHT_OPACITY", "Highlight opacity", "opacity", HH.OPACITY_MIN, HH.OPACITY_MAX,
+        HH.DEFAULT_OPACITY, "%d%%", "How strong the glow or line is.")
+    Slider("HOTBARHIGHLIGHT_GLOW", "Glow size", "glow", HH.GLOW_MIN, HH.GLOW_MAX, HH.DEFAULT_GLOW, "%d px",
+        "How far the soft glow reaches beyond the bar, in pixels.")
+    Slider("HOTBARHIGHLIGHT_THICKNESS", "Line thickness", "thickness", HH.THICKNESS_MIN, HH.THICKNESS_MAX,
+        HH.DEFAULT_THICKNESS, "%d px", "The thin line's thickness, in pixels.")
     Dropdown("HOTBARHIGHLIGHT_IDLE", "With no modifier held", "all", HH.IDLE,
         function() return HH.db.idle end, function(value) HH.db.idle = value end,
         "Every bar normal: nothing is highlighted until you hold a modifier. Highlight the bar with no modifier: "

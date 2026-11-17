@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0 (2026-11-17)
+
+0.1.0 was played in the game and worked: layers found from the keys, highlight and fade, short labels.
+
+Added
+- Soft glow around the highlighted bar, fading outward; it is the default. The thin line stays as a style.
+- Highlight color from the game's color picker (a list of six colors on a client without it), highlight opacity, glow size.
+
+Changed
+- The saved color is now `aarrggbb`; a color name saved by 0.1.0 is converted.
+
 ## 0.1.0 (2026-11-17)
 
 First version.

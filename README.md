@@ -2,16 +2,16 @@
 
 [WoW: Forever] A visual aid addon that highlights the hotbar based on the currently pressed modifier or selector key.
 
-If your action bars are layers of the same keys (a 12-button mouse grid with Shift, Ctrl and Alt switching between bars, for example), this shows which layer you are on: while you hold a modifier, the bar bound to it gets a border and the other bound bars fade. It can also shorten the key labels on the buttons, so `s-1` reads `S1`.
+If your action bars are layers of the same keys (a 12-button mouse grid with Shift, Ctrl and Alt switching between bars, for example), this shows which layer you are on: while you hold a modifier, the bar bound to it gets a soft glow around it and the other bound bars fade. It can also shorten the key labels on the buttons, so `s-1` reads `S1`.
 
 Interface 16001 (World of Warcraft: Forever). Slash command: `/hh`.
 
-Status: 0.1.0. The logic is covered by tests against a stand-in for the game; it has not yet been played in the game itself. Please report what you see.
+Status: 0.2.0. Early, and played on one setup only (five bars on a 12-button mouse grid, default interface). Please report what you see on yours.
 
 ## What it does
 
 - **Finds each bar's layer by itself.** A bar's layer is the set of modifiers most of its buttons' key bindings share. Buttons bound to Shift-1 through Shift-= make that bar the Shift layer. Nothing to set up; rebinding keys updates it at once.
-- **Highlights the bar you are on.** Hold Shift, Ctrl, Alt or a mix: the bar of that layer gets a border, the other bound bars fade to an opacity you choose. Let go and everything is as it was, including any opacity a bar had before.
+- **Highlights the bar you are on.** Hold Shift, Ctrl, Alt or a mix: the bar of that layer gets a soft glow in a color you pick (or a thin line), the other bound bars fade to an opacity you choose. Let go and everything is as it was, including any opacity a bar had before.
 - **Stays out of the way.** Bars with no key bindings are never touched. Modifiers that no bar uses change nothing, so Alt as a self-cast key or Shift while typing in chat does not make the bars flicker. Edit Mode shows the bars as they are.
 - **Shortens key labels.** One letter per modifier, then the key: `S1`, `C1`, `AS1`, `AC1`. Or the key alone (`1`), since the highlighted bar already tells you the modifier. Or leave the game's labels untouched.
 
@@ -31,7 +31,11 @@ Options, AddOns, Hotbar Highlight, or `/hh`.
 |---|---|---|
 | Enabled | on | Off restores bars and key labels to the game's own. |
 | Other bars' opacity | 40% | How visible the other bound bars stay while one is highlighted. 100% does not fade them. |
-| Border around the highlighted bar | on | With its color and thickness. |
+| Highlight around the bar | on | Off: the bar only stays bright while the others fade. |
+| Highlight style | soft glow | Soft glow: a light around the bar that fades outward. Thin line: a plain frame. |
+| Highlight color | gold | Any color, from the game's color picker. |
+| Highlight opacity | 90% | How strong the glow or line is. |
+| Glow size, line thickness | 18 px, 2 px | How far the glow reaches; how thick the line is. |
 | With no modifier held | every bar normal | Or: keep the unmodified bar highlighted and the others faded until you hold a modifier. |
 | Only in combat | off | Highlight and fade only during a fight. |
 | Key labels | short | Short (`S1`), key only (`1`), or the game's own (`s-1`). |
