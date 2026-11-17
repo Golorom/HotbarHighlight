@@ -28,7 +28,7 @@ Made for the default UI. A custom UI or an action bar addon may not work.
 - Highlight around the whole bar or only around the visible buttons.
 - Short key labels such as S1 and AC1. Move, resize and fade them.
 - Bars without key bindings are left alone. Modifiers no bar uses do nothing.
-- Looks only. No key binding, no casting, no moving of bars, nothing sent to other players.
+- Visual only.
 - Covers Action Bars 1 to 8, the pet bar and the stance bar.
 
 Settings open with `/hh` or from Options, AddOns, Hotbar Highlight. `/hh status` lists what the addon found on your bars.

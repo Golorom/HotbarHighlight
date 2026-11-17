@@ -18,7 +18,7 @@ It shows which action bar you are on. Hold Shift, Ctrl or Alt and the bar bound 
 - Short key labels such as `S1` and `AC1`. Move, resize and fade them.
 - Bars without key bindings are left alone. Modifiers no bar uses do nothing.
 - Edit Mode shows the bars unchanged.
-- Looks only. No key binding, no casting, no moving of bars or buttons, nothing sent to other players.
+- Visual only.
 - Covers Action Bars 1 to 8, the pet bar and the stance bar.
 
 ## Settings
