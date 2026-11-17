@@ -1,46 +1,41 @@
 # Listing text
 
-For creating the project pages on CurseForge and Wago. Paste and adjust.
+Text for the project pages on CurseForge and Wago. Paste it and adjust as you like.
 
-**Name:** Hotbar Highlight
-
-**Summary (one line):** Shows which action bar your held modifier keys belong to: that bar glows, the others fade. Short, movable key labels.
-
-**Category:** Action Bars
-
-**Game version:** World of Warcraft: Forever (interface 16001)
-
-**License:** MIT
-
-**Source:** https://github.com/Golorom/HotbarHighlight
-
-**Issues:** https://github.com/Golorom/HotbarHighlight/issues
+| Field | Text |
+|---|---|
+| Name | Hotbar Highlight |
+| Summary | Hold a modifier and the action bar that belongs to it glows while the others fade. Made for the default UI. |
+| Category | Action Bars |
+| Game version | World of Warcraft Forever, interface 16001 |
+| License | MIT |
+| Source | https://github.com/Golorom/HotbarHighlight |
+| Issues | https://github.com/Golorom/HotbarHighlight/issues |
 
 ## Description
 
-If your action bars are layers of the same keys, for example a 12-button mouse grid with Shift, Ctrl and Alt switching between bars, Hotbar Highlight shows which layer you are on.
+Many players put the same keys on several action bars and switch between them with Shift, Ctrl or Alt. A 12-button mouse is the usual case. After a while it gets hard to tell which bar the next press will hit.
 
-**While you hold a modifier**
-- the bar bound to it gets a soft glow in a color you pick, or a thin line;
-- the other bound bars fade to an opacity you choose;
-- let go, and everything is as it was.
+Hotbar Highlight shows you. Hold a modifier and the bar that belongs to it glows while the others fade. Let go and everything is back the way it was.
 
-**Nothing to set up.** Each bar's layer is read from the keys bound to its buttons. Rebinding updates it at once. A bar can also be given a layer by hand or left alone.
+**Made for the default interface.** It works with the game's own action bars, 1 to 8 plus the pet and stance bars. With a custom UI or an action bar addon such as Bartender, Dominos or ElvUI it may do nothing or look wrong, and I can't promise it will work there.
 
-**Stays out of the way.** Bars with no key bindings are never touched. Modifiers that no bar uses change nothing, so Alt as a self-cast key or Shift while typing does not make the bars flicker. Edit Mode shows the bars as they are.
+**Nothing to set up.** The addon looks at the keys bound to each bar and works out which modifier the bar belongs to. Rebind your keys and it follows. You can also set a bar by hand or tell the addon to leave it alone.
 
-**Key labels.** `s-1` becomes `S1`, `a-c-1` becomes `AC1`, or just `1`. Put the label in any corner, on a side or in the center of the button, nudge it, resize it, fade it.
+**It stays out of the way.** Bars with no key bindings are never touched. Modifiers that no bar uses do nothing, so holding Alt to cast on yourself or Shift while typing will not make your bars flicker.
 
-**Only looks.** It does not bind keys, change what a button does, move bars or buttons, cast anything, or send anything to other players.
+**Your look.** Pick a soft glow or a thin line, any color, and how much the other bars fade. The highlight can go around the whole bar or only around the buttons you can see.
 
-Works with the game's own action bars (1 to 8, pet and stance). Bar replacement addons use their own frames and are not covered.
+**Shorter key labels.** `s-1` becomes `S1` and `a-c-1` becomes `AC1`, or just `1` if you like. You can put the label in any corner or in the middle of the button, nudge it, resize it and fade it.
 
-Settings: Options, AddOns, Hotbar Highlight, or `/hh`. `/hh status` lists what was found on your bars.
+**Looks only.** It does not bind keys, change what a button does, move bars or buttons, cast anything, or send anything to other players.
 
-Free and open source. If you want to say thanks: https://boosty.to/goromajur (with a card issued outside Russia, choose USD or EUR at checkout).
+Open the settings from Options, AddOns, Hotbar Highlight, or type `/hh`. If something does not show, `/hh status` lists what the addon found on your bars.
+
+Free and open source. If you want to say thanks, you can do that at https://boosty.to/goromajur. If your card was issued outside Russia, choose USD or EUR at checkout.
 
 ## After the page exists
 
-1. Put the project's ID in `HotbarHighlight.toc`: `## X-Curse-Project-ID: <number>` and `## X-Wago-ID: <id from the Wago developer dashboard>`.
-2. Add the keys to the repository: Settings, Secrets and variables, Actions, New repository secret, named `CF_API_KEY` and `WAGO_API_TOKEN`.
-3. The next release uploads there too (job "publish" in the Release workflow).
+1. Put the project's ID into `HotbarHighlight.toc` as `## X-Curse-Project-ID` with the number, and `## X-Wago-ID` with the ID from the Wago developer dashboard.
+2. Add the keys to the repository under Settings, Secrets and variables, Actions, as new repository secrets named `CF_API_KEY` and `WAGO_API_TOKEN`.
+3. The next release then uploads to both sites as well. That is the job called publish in the Release workflow.
