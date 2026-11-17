@@ -17,6 +17,8 @@ env:
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Lua 5.1
@@ -24,6 +26,7 @@ jobs:
       - name: Run the tests
         run: lua5.1 tests/run.lua
       - name: Read the version; a pushed tag must match it; no release of it may exist
+        id: version
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -37,6 +40,7 @@ jobs:
           fi
           echo "VERSION=$version" >> "$GITHUB_ENV"
           echo "TAG=$tag" >> "$GITHUB_ENV"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
       - name: Build the zip
         run: git archive --format=zip --prefix="$ADDON/" -o "$ADDON-$TAG.zip" HEAD
       - name: Take the release notes from the changelog
@@ -47,3 +51,32 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$TAG" "$ADDON-$TAG.zip" --target "$GITHUB_SHA" --title "Hotbar Highlight $TAG" --notes-file notes.md
+
+  # CurseForge and Wago, after the GitHub release exists. Runs only for the
+  # sites whose project ID is in the TOC (## X-Curse-Project-ID, ## X-Wago-ID)
+  # and whose key is among the repository's secrets (CF_API_KEY,
+  # WAGO_API_TOKEN). A failure here leaves the GitHub release as it is.
+  publish:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+          fetch-depth: 0
+      - name: Which sites have a project ID and a key
+        id: sites
+        env:
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+          WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
+        run: |
+          any=false
+          if grep -q '^## X-Curse-Project-ID: *[0-9]' "$ADDON.toc" && [ -n "$CF_API_KEY" ]; then echo "CurseForge: yes"; any=true; else echo "CurseForge: no ID in the TOC or no CF_API_KEY secret"; fi
+          if grep -q '^## X-Wago-ID: *[A-Za-z0-9]' "$ADDON.toc" && [ -n "$WAGO_API_TOKEN" ]; then echo "Wago: yes"; any=true; else echo "Wago: no ID in the TOC or no WAGO_API_TOKEN secret"; fi
+          echo "any=$any" >> "$GITHUB_OUTPUT"
+      - name: Package and upload
+        if: steps.sites.outputs.any == 'true'
+        uses: BigWigsMods/packager@v2
+        env:
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+          WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}

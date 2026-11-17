@@ -4,3 +4,4 @@ tests export-ignore
 docs export-ignore
 .github export-ignore
 .gitattributes export-ignore
+.pkgmeta export-ignore

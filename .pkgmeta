@@ -1,0 +1,15 @@
+# For the BigWigs packager, which uploads a release to CurseForge and Wago
+# (.github/workflows/release.yml, job "publish"). The GitHub release's zip is
+# built by the workflow itself with git archive.
+package-as: HotbarHighlight
+
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
+
+ignore:
+  - tests
+  - docs
+  - .github
+  - .gitattributes
+  - .pkgmeta
