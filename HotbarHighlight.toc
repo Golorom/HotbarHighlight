@@ -2,12 +2,13 @@
 ## Title: Hotbar Highlight
 ## Notes: A visual aid addon. Highlights the action bar of the modifier keys you hold and fades the others. Short key labels you can move, resize and fade.
 ## Author: Golorom
-## Version: 1.0.1
+## Version: 1.0.2
 ## IconTexture: Interface\Icons\INV_Misc_Key_03
 ## Category: Action Bars
 ## SavedVariables: HotbarHighlightDB
 ## X-License: MIT
 ## X-Website: https://github.com/Golorom/HotbarHighlight
+## X-Curse-Project-ID: 1812112
 ## X-Wago-ID: kGr9DgKy
 
 Core.lua

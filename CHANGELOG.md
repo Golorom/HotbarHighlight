@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.2 (2026-11-17)
+
+No changes in game.
+
+- Published on CurseForge.
+- New logo.
+
 ## 1.0.1 (2026-11-17)
 
 No changes in game.
